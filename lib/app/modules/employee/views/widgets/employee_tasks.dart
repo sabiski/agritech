@@ -60,9 +60,18 @@ class EmployeeTasks extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Tâches',
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Get.back(),
+                  tooltip: 'Retour',
+                ),
+                Text(
+                  'Tâches',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
             ),
             TextButton.icon(
               onPressed: () => _showAddTaskDialog(context),
