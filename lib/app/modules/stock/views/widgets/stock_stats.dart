@@ -24,44 +24,100 @@ class StockStats extends GetView<StockController> {
         final lowStockCount = controller.lowStocks.length;
         final totalCount = controller.stocks.length;
 
-        return Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.inventory,
-                title: 'Total des produits',
-                value: totalCount.toString(),
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.warning,
-                title: 'Stock bas',
-                value: lowStockCount.toString(),
-                color: Colors.orange,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.access_time,
-                title: 'Bientôt périmés',
-                value: nearExpirationCount.toString(),
-                color: Colors.amber,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.error_outline,
-                title: 'Périmés',
-                value: expiredCount.toString(),
-                color: Colors.red,
-              ),
-            ),
-          ],
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 600) {
+              // Layout mobile
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.inventory,
+                          title: 'Total',
+                          value: totalCount.toString(),
+                          color: AppTheme.primaryGreen,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.warning,
+                          title: 'Stock bas',
+                          value: lowStockCount.toString(),
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.access_time,
+                          title: 'Bientôt périmés',
+                          value: nearExpirationCount.toString(),
+                          color: Colors.amber,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.error_outline,
+                          title: 'Périmés',
+                          value: expiredCount.toString(),
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+            
+            // Layout desktop
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    icon: Icons.inventory,
+                    title: 'Total des produits',
+                    value: totalCount.toString(),
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    icon: Icons.warning,
+                    title: 'Stock bas',
+                    value: lowStockCount.toString(),
+                    color: Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    icon: Icons.access_time,
+                    title: 'Bientôt périmés',
+                    value: nearExpirationCount.toString(),
+                    color: Colors.amber,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    icon: Icons.error_outline,
+                    title: 'Périmés',
+                    value: expiredCount.toString(),
+                    color: Colors.red,
+                  ),
+                ),
+              ],
+            );
+          },
         );
       }),
     );

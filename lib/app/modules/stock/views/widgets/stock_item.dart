@@ -97,6 +97,7 @@ class StockItem extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
+                    flex: 2,
                     child: _buildInfoItem(
                       icon: Icons.inventory,
                       title: 'Quantité',
@@ -105,6 +106,7 @@ class StockItem extends StatelessWidget {
                     ),
                   ),
                   Expanded(
+                    flex: 2,
                     child: _buildInfoItem(
                       icon: Icons.calendar_today,
                       title: 'Date d\'expiration',
@@ -113,6 +115,7 @@ class StockItem extends StatelessWidget {
                     ),
                   ),
                   Expanded(
+                    flex: 1,
                     child: _buildInfoItem(
                       icon: Icons.attach_money,
                       title: 'Prix',

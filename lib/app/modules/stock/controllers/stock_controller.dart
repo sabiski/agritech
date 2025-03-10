@@ -11,6 +11,7 @@ class StockController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString searchQuery = ''.obs;
   final RxString selectedCategory = 'Tous'.obs;
+  final RxString error = ''.obs;
   
   // Filtres observables
   final RxList<String> categories = <String>['Tous'].obs;
@@ -25,11 +26,15 @@ class StockController extends GetxController {
   Future<void> fetchStocks() async {
     try {
       isLoading.value = true;
+      error.value = '';
       
+      print('Fetching stocks...');
       final response = await _supabase
           .from('stocks')
           .select()
           .order('created_at', ascending: false);
+      
+      print('Response received: $response');
       
       final List<StockModel> stocksList = response
           .map<StockModel>((json) => StockModel.fromJson(json))
@@ -44,7 +49,10 @@ class StockController extends GetxController {
           .toList();
       categories.value = ['Tous', ...uniqueCategories];
       
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error fetching stocks: $e');
+      print('Stack trace: $stackTrace');
+      error.value = 'Erreur lors du chargement des stocks: ${e.toString()}';
       showErrorSnackbar('Erreur lors du chargement des stocks', e.toString());
     } finally {
       isLoading.value = false;
@@ -55,6 +63,9 @@ class StockController extends GetxController {
   Future<void> addStock(StockModel stock) async {
     try {
       isLoading.value = true;
+      error.value = '';
+      
+      print('Adding stock: ${stock.toJson()}');
       
       await _supabase
           .from('stocks')
@@ -64,7 +75,10 @@ class StockController extends GetxController {
       Get.back();
       showSuccessSnackbar('Succès', 'Stock ajouté avec succès');
       
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error adding stock: $e');
+      print('Stack trace: $stackTrace');
+      error.value = 'Erreur lors de l\'ajout du stock: ${e.toString()}';
       showErrorSnackbar('Erreur lors de l\'ajout du stock', e.toString());
     } finally {
       isLoading.value = false;
@@ -75,6 +89,9 @@ class StockController extends GetxController {
   Future<void> updateStock(StockModel stock) async {
     try {
       isLoading.value = true;
+      error.value = '';
+      
+      print('Updating stock: ${stock.toJson()}');
       
       await _supabase
           .from('stocks')
@@ -85,7 +102,10 @@ class StockController extends GetxController {
       Get.back();
       showSuccessSnackbar('Succès', 'Stock mis à jour avec succès');
       
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error updating stock: $e');
+      print('Stack trace: $stackTrace');
+      error.value = 'Erreur lors de la mise à jour du stock: ${e.toString()}';
       showErrorSnackbar('Erreur lors de la mise à jour du stock', e.toString());
     } finally {
       isLoading.value = false;
@@ -96,6 +116,9 @@ class StockController extends GetxController {
   Future<void> deleteStock(String id) async {
     try {
       isLoading.value = true;
+      error.value = '';
+      
+      print('Deleting stock: $id');
       
       await _supabase
           .from('stocks')
@@ -105,7 +128,10 @@ class StockController extends GetxController {
       await fetchStocks();
       showSuccessSnackbar('Succès', 'Stock supprimé avec succès');
       
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error deleting stock: $e');
+      print('Stack trace: $stackTrace');
+      error.value = 'Erreur lors de la suppression du stock: ${e.toString()}';
       showErrorSnackbar('Erreur lors de la suppression du stock', e.toString());
     } finally {
       isLoading.value = false;
@@ -115,7 +141,8 @@ class StockController extends GetxController {
   // Filtrer les stocks
   List<StockModel> get filteredStocks {
     return stocks.where((stock) {
-      final matchesSearch = stock.name.toLowerCase().contains(searchQuery.value.toLowerCase());
+      final matchesSearch = stock.name.toLowerCase().contains(searchQuery.value.toLowerCase()) ||
+                          stock.category.toLowerCase().contains(searchQuery.value.toLowerCase());
       final matchesCategory = selectedCategory.value == 'Tous' || stock.category == selectedCategory.value;
       return matchesSearch && matchesCategory;
     }).toList();

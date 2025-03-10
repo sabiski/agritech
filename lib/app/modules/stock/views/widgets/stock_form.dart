@@ -5,6 +5,8 @@ import '../../controllers/stock_controller.dart';
 import '../../../../data/models/stock_model.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StockForm extends StatefulWidget {
   final StockModel? stock;
@@ -21,6 +23,7 @@ class StockForm extends StatefulWidget {
 class _StockFormState extends State<StockForm> {
   final _formKey = GlobalKey<FormState>();
   final _controller = Get.find<StockController>();
+  final _supabase = Supabase.instance.client;
   
   late TextEditingController _nameController;
   late TextEditingController _categoryController;
@@ -29,6 +32,7 @@ class _StockFormState extends State<StockForm> {
   late TextEditingController _priceController;
   late TextEditingController _descriptionController;
   late DateTime _expirationDate;
+  bool _isLoading = false;
   
   @override
   void initState() {
@@ -188,7 +192,7 @@ class _StockFormState extends State<StockForm> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${_expirationDate.day}/${_expirationDate.month}/${_expirationDate.year}',
+                            DateFormat('dd/MM/yyyy').format(_expirationDate),
                           ),
                           const Icon(Icons.calendar_today, size: 20),
                         ],
@@ -212,17 +216,26 @@ class _StockFormState extends State<StockForm> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => Get.back(),
+                  onPressed: _isLoading ? null : () => Get.back(),
                   child: const Text('Annuler'),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryGreen,
                     foregroundColor: Colors.white,
                   ),
-                  child: Text(widget.stock == null ? 'Ajouter' : 'Modifier'),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(widget.stock == null ? 'Ajouter' : 'Modifier'),
                 ),
               ],
             ),
@@ -234,24 +247,39 @@ class _StockFormState extends State<StockForm> {
 
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      final stock = StockModel(
-        id: widget.stock?.id ?? const Uuid().v4(),
-        name: _nameController.text,
-        category: _categoryController.text,
-        quantity: double.parse(_quantityController.text),
-        unit: _unitController.text,
-        price: double.parse(_priceController.text),
-        expirationDate: _expirationDate,
-        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-        createdAt: widget.stock?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-        farmerId: widget.stock?.farmerId ?? 'current_farmer_id', // TODO: Get from auth
-      );
+      setState(() => _isLoading = true);
+      
+      try {
+        final stock = StockModel(
+          id: widget.stock?.id ?? const Uuid().v4(),
+          name: _nameController.text,
+          category: _categoryController.text,
+          quantity: double.parse(_quantityController.text),
+          unit: _unitController.text,
+          price: double.parse(_priceController.text),
+          expirationDate: _expirationDate,
+          description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+          createdAt: widget.stock?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
+          farmerId: _supabase.auth.currentUser!.id,
+        );
 
-      if (widget.stock == null) {
-        await _controller.addStock(stock);
-      } else {
-        await _controller.updateStock(stock);
+        if (widget.stock == null) {
+          await _controller.addStock(stock);
+        } else {
+          await _controller.updateStock(stock);
+        }
+      } catch (e) {
+        Get.snackbar(
+          'Erreur',
+          'Une erreur est survenue: ${e.toString()}',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
