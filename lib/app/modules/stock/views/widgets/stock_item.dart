@@ -4,6 +4,7 @@ import '../../../../data/models/stock_model.dart';
 import '../../controllers/stock_controller.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
+import '../widgets/stock_form.dart';
 
 class StockItem extends StatelessWidget {
   final StockModel stock;
@@ -192,17 +193,13 @@ class StockItem extends StatelessWidget {
   }
 
   void _showEditDialog(BuildContext context) {
-    // TODO: Implémenter le formulaire d'édition
     Get.dialog(
-      AlertDialog(
-        title: const Text('Modifier le stock'),
-        content: const Text('Formulaire d\'édition à implémenter'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Fermer'),
-          ),
-        ],
+      Dialog(
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(16),
+          child: StockForm(stock: stock),
+        ),
       ),
     );
   }
