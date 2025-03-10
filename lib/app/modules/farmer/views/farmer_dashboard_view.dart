@@ -153,6 +153,7 @@ class _FarmerDashboardViewState extends State<FarmerDashboardView> {
             onTap: () {
               setState(() => _selectedIndex = 4);
               Navigator.pop(context);
+              Get.toNamed('/employee');
             },
           ),
           ListTile(

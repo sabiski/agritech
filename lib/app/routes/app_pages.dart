@@ -20,6 +20,8 @@ import '../modules/crops/bindings/crops_binding.dart';
 import '../modules/crops/views/crops_view.dart';
 import '../modules/finance/bindings/finance_binding.dart';
 import '../modules/finance/views/finance_view.dart';
+import '../modules/employee/bindings/employee_binding.dart';
+import '../modules/employee/views/employee_view.dart';
 
 part 'app_routes.dart';
 
@@ -35,19 +37,63 @@ class AppPages {
       binding: HomeBinding(),
     ),
     GetPage(
-      name: _Paths.ONBOARDING,
-      page: () => const OnboardingView(),
-      binding: OnboardingBinding(),
-    ),
-    GetPage(
       name: _Paths.AUTH,
       page: () => const AuthView(),
       binding: AuthBinding(),
     ),
     GetPage(
+      name: _Paths.ONBOARDING,
+      page: () => const OnboardingView(),
+      binding: OnboardingBinding(),
+    ),
+    GetPage(
       name: _Paths.FARMER,
       page: () => const FarmerView(),
       binding: FarmerBinding(),
+      children: [
+        GetPage(
+          name: _Paths.DASHBOARD,
+          page: () => const FarmerDashboardView(),
+        ),
+      ],
+    ),
+    GetPage(
+      name: _Paths.SUPPLIER,
+      page: () => const SupplierDashboardView(),
+      binding: SupplierBinding(),
+      children: [
+        GetPage(
+          name: _Paths.DASHBOARD,
+          page: () => const SupplierDashboardView(),
+        ),
+      ],
+    ),
+    GetPage(
+      name: _Paths.CUSTOMER,
+      page: () => const CustomerDashboardView(),
+      binding: CustomerBinding(),
+      children: [
+        GetPage(
+          name: _Paths.DASHBOARD,
+          page: () => const CustomerDashboardView(),
+        ),
+      ],
+    ),
+    GetPage(
+      name: _Paths.DELIVERY,
+      page: () => const DeliveryDashboardView(),
+      binding: DeliveryBinding(),
+      children: [
+        GetPage(
+          name: _Paths.DASHBOARD,
+          page: () => const DeliveryDashboardView(),
+        ),
+      ],
+    ),
+    GetPage(
+      name: _Paths.CROPS,
+      page: () => const CropsView(),
+      binding: CropsBinding(),
     ),
     GetPage(
       name: _Paths.STOCK,
@@ -60,30 +106,9 @@ class AppPages {
       binding: FinanceBinding(),
     ),
     GetPage(
-      name: Routes.FARMER_DASHBOARD,
-      page: () => const FarmerDashboardView(),
-      binding: FarmerBinding(),
-      transition: Transition.fade,
-    ),
-    GetPage(
-      name: Routes.SUPPLIER_DASHBOARD,
-      page: () => const SupplierDashboardView(),
-      binding: SupplierBinding(),
-    ),
-    GetPage(
-      name: Routes.CUSTOMER_DASHBOARD,
-      page: () => const CustomerDashboardView(),
-      binding: CustomerBinding(),
-    ),
-    GetPage(
-      name: Routes.DELIVERY_DASHBOARD,
-      page: () => const DeliveryDashboardView(),
-      binding: DeliveryBinding(),
-    ),
-    GetPage(
-      name: Routes.CROPS,
-      page: () => const CropsView(),
-      binding: CropsBinding(),
+      name: _Paths.EMPLOYEE,
+      page: () => const EmployeeView(),
+      binding: EmployeeBinding(),
     ),
   ];
 } 
