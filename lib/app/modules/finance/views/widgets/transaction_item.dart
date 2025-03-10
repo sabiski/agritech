@@ -25,138 +25,133 @@ class TransactionItem extends StatelessWidget {
 
     final isIncome = transaction.type == TransactionType.income;
     final color = isIncome ? Colors.green : Colors.red;
-    final icon = isIncome ? Icons.arrow_upward : Icons.arrow_downward;
 
-    return Card(
-      elevation: 1,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: InkWell(
         onTap: () => _showEditDialog(context),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+        child: Row(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          transaction.category,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat('dd/MM/yyyy').format(transaction.date),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(icon, color: color, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            currencyFormat.format(transaction.amount),
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                      Expanded(
                         child: Text(
-                          isIncome ? 'Revenu' : 'Dépense',
-                          style: TextStyle(
-                            color: color,
-                            fontSize: 11,
+                          transaction.category,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
+                        ),
+                      ),
+                      Text(
+                        currencyFormat.format(transaction.amount),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: color,
                         ),
                       ),
                     ],
                   ),
-                  PopupMenuButton<String>(
-                    padding: EdgeInsets.zero,
-                    icon: Icon(
-                      Icons.more_vert,
-                      size: 18,
-                      color: Colors.grey.shade600,
-                    ),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _showEditDialog(context);
-                      } else if (value == 'delete') {
-                        _showDeleteDialog(context);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 18),
-                            SizedBox(width: 8),
-                            Text('Modifier', style: TextStyle(fontSize: 14)),
-                          ],
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        DateFormat('dd/MM/yyyy').format(transaction.date),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red, size: 18),
-                            SizedBox(width: 8),
-                            Text('Supprimer', 
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 14,
-                              ),
+                      if (transaction.description?.isNotEmpty ?? false)
+                        Expanded(
+                          child: Text(
+                            transaction.description!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
-                          ],
+                            textAlign: TextAlign.end,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],
               ),
-              if (transaction.description != null && transaction.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  transaction.description!,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
+            ),
+            PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                Icons.more_vert,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _showEditDialog(context);
+                } else if (value == 'delete') {
+                  _showDeleteDialog(context);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.edit,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Modifier',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.delete,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Supprimer',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -178,7 +173,7 @@ class TransactionItem extends StatelessWidget {
     Get.dialog(
       AlertDialog(
         title: const Text('Confirmer la suppression'),
-        content: Text('Voulez-vous vraiment supprimer cette transaction ?'),
+        content: const Text('Voulez-vous vraiment supprimer cette transaction ?'),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
