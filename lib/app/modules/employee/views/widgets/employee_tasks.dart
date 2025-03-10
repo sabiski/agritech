@@ -5,6 +5,7 @@ import '../../../../data/models/employee_task_model.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'employee_task_form.dart';
+import 'employee_performance_card.dart';
 
 class EmployeeTasks extends StatelessWidget {
   final String employeeId;
@@ -79,6 +80,13 @@ class EmployeeTasks extends StatelessWidget {
               label: const Text('Ajouter une tâche'),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+        EmployeePerformanceCard(employeeId: employeeId),
+        const SizedBox(height: 24),
+        Text(
+          'Liste des tâches',
+          style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 16),
         Obx(() {
