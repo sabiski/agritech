@@ -129,7 +129,9 @@ class EmployeeTasks extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
                     width: 12,
@@ -139,7 +141,6 @@ class EmployeeTasks extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       task.title,
@@ -179,6 +180,7 @@ class EmployeeTasks extends StatelessWidget {
               ],
               const SizedBox(height: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.calendar_today,
@@ -237,9 +239,11 @@ class EmployeeTasks extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Détails de la tâche',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    Expanded(
+                      child: Text(
+                        'Détails de la tâche',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -260,7 +264,9 @@ class EmployeeTasks extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -280,7 +286,6 @@ class EmployeeTasks extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -291,6 +296,7 @@ class EmployeeTasks extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
                                     width: 8,
@@ -373,8 +379,10 @@ class EmployeeTasks extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  alignment: WrapAlignment.end,
                   children: [
                     TextButton.icon(
                       onPressed: () {
@@ -387,7 +395,6 @@ class EmployeeTasks extends StatelessWidget {
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
-                    const SizedBox(width: 16),
                     if (task.status != TaskStatus.completed)
                       TextButton.icon(
                         onPressed: () {
@@ -412,7 +419,6 @@ class EmployeeTasks extends StatelessWidget {
                           style: TextStyle(color: Colors.green),
                         ),
                       ),
-                    const SizedBox(width: 16),
                     ElevatedButton.icon(
                       onPressed: () {
                         Get.back();
