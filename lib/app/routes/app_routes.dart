@@ -8,6 +8,7 @@ abstract class Routes {
   static const AUTH = _Paths.AUTH;
   static const FARMER = _Paths.FARMER;
   static const STOCK = _Paths.STOCK;
+  static const FINANCE = _Paths.FINANCE;
   static const FARMER_DASHBOARD = '/farmer';
   static const SUPPLIER_DASHBOARD = '/supplier';
   static const CUSTOMER_DASHBOARD = '/customer';
@@ -21,4 +22,5 @@ abstract class _Paths {
   static const AUTH = '/auth';
   static const FARMER = '/farmer';
   static const STOCK = '/stock';
+  static const FINANCE = '/finance';
 } 

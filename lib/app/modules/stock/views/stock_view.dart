@@ -15,7 +15,9 @@ class StockView extends GetView<StockController> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            Get.offAllNamed('/farmer');
+          },
         ),
         title: const Text('Gestion des Stocks'),
       ),

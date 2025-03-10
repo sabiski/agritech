@@ -139,6 +139,7 @@ class _FarmerDashboardViewState extends State<FarmerDashboardView> {
             onTap: () {
               setState(() => _selectedIndex = 3);
               Navigator.pop(context);
+              Get.toNamed('/finance');
             },
           ),
           ListTile(
@@ -480,6 +481,9 @@ class _FarmerDashboardViewState extends State<FarmerDashboardView> {
                 break;
               case 2:
                 Get.toNamed('/stock');
+                break;
+              case 3:
+                Get.toNamed('/finance');
                 break;
               // Autres cas à implémenter pour les autres sections
             }

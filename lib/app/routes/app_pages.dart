@@ -18,6 +18,8 @@ import '../modules/delivery/bindings/delivery_binding.dart';
 import '../modules/delivery/views/delivery_dashboard_view.dart';
 import '../modules/crops/bindings/crops_binding.dart';
 import '../modules/crops/views/crops_view.dart';
+import '../modules/finance/bindings/finance_binding.dart';
+import '../modules/finance/views/finance_view.dart';
 
 part 'app_routes.dart';
 
@@ -53,6 +55,11 @@ class AppPages {
       binding: StockBinding(),
     ),
     GetPage(
+      name: _Paths.FINANCE,
+      page: () => const FinanceView(),
+      binding: FinanceBinding(),
+    ),
+    GetPage(
       name: Routes.FARMER_DASHBOARD,
       page: () => const FarmerDashboardView(),
       binding: FarmerBinding(),
@@ -61,7 +68,6 @@ class AppPages {
     GetPage(
       name: Routes.SUPPLIER_DASHBOARD,
       page: () => const SupplierDashboardView(),
-      
       binding: SupplierBinding(),
     ),
     GetPage(
