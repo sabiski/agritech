@@ -50,12 +50,11 @@ class AppPages {
       name: _Paths.FARMER,
       page: () => const FarmerView(),
       binding: FarmerBinding(),
-      children: [
-        GetPage(
-          name: _Paths.DASHBOARD,
-          page: () => const FarmerDashboardView(),
-        ),
-      ],
+    ),
+    GetPage(
+      name: _Paths.FARMER_DASHBOARD,
+      page: () => const FarmerDashboardView(),
+      binding: FarmerBinding(),
     ),
     GetPage(
       name: _Paths.SUPPLIER,

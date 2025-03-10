@@ -68,9 +68,6 @@ class EmployeeTasks extends StatelessWidget {
               onPressed: () => _showAddTaskDialog(context),
               icon: const Icon(Icons.add),
               label: const Text('Ajouter une tâche'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryGreen,
-              ),
             ),
           ],
         ),

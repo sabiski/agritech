@@ -78,8 +78,10 @@ class EmployeeController extends GetxController {
       
       final response = await _supabase
           .from('employee_tasks')
-          .select()
+          .select('*, employees!inner(*)')
           .order('due_date', ascending: true);
+      
+      print('Tasks response: $response'); // Pour le débogage
       
       final List<EmployeeTaskModel> tasksList = response
           .map<EmployeeTaskModel>((json) => EmployeeTaskModel.fromJson(json))
@@ -363,6 +365,10 @@ class EmployeeController extends GetxController {
 
   // Obtenir les tâches d'un employé
   List<EmployeeTaskModel> getEmployeeTasks(String employeeId) {
-    return tasks.where((task) => task.employeeId == employeeId).toList();
+    print('Getting tasks for employee: $employeeId'); // Pour le débogage
+    print('Available tasks: ${tasks.length}'); // Pour le débogage
+    final employeeTasks = tasks.where((task) => task.employeeId == employeeId).toList();
+    print('Found tasks: ${employeeTasks.length}'); // Pour le débogage
+    return employeeTasks;
   }
 } 
