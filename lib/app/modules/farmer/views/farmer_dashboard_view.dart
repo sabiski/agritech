@@ -167,6 +167,7 @@ class _FarmerDashboardViewState extends State<FarmerDashboardView> {
             onTap: () {
               setState(() => _selectedIndex = 5);
               Navigator.pop(context);
+              Get.toNamed('/report');
             },
           ),
           const Divider(),

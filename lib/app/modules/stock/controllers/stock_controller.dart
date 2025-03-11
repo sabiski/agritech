@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/stock_model.dart';
 import '../../../core/utils/helpers.dart';
+import '../../../data/models/stock_item_model.dart';
+import '../../../data/models/stock_movement_model.dart';
 
 class StockController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -171,5 +173,37 @@ class StockController extends GetxController {
   // Mettre à jour la catégorie sélectionnée
   void updateSelectedCategory(String category) {
     selectedCategory.value = category;
+  }
+
+  // Récupérer tous les articles en stock
+  Future<List<StockItemModel>> getStockItems() async {
+    try {
+      final response = await _supabase
+          .from('stock_items')
+          .select()
+          .order('name');
+
+      return (response as List).map((json) => StockItemModel.fromJson(json)).toList();
+    } catch (e) {
+      print('Erreur lors de la récupération des articles: $e');
+      return [];
+    }
+  }
+
+  // Récupérer les mouvements de stock pour une période
+  Future<List<StockMovementModel>> getStockMovements(DateTime startDate, DateTime endDate) async {
+    try {
+      final response = await _supabase
+          .from('stock_movements')
+          .select('*, stock_items(name)')
+          .gte('date', startDate.toIso8601String())
+          .lte('date', endDate.toIso8601String())
+          .order('date', ascending: false);
+
+      return (response as List).map((json) => StockMovementModel.fromJson(json)).toList();
+    } catch (e) {
+      print('Erreur lors de la récupération des mouvements de stock: $e');
+      return [];
+    }
   }
 } 

@@ -1,4 +1,5 @@
 class SalarySettingsModel {
+  final String? farmerId; // ID du fermier propriétaire des paramètres
   final double onTimeCompletionBonus; // Bonus pour complétion dans les délais (%)
   final double highProductivityBonus; // Bonus pour haute productivité (%)
   final double overdueTaskPenalty; // Malus par tâche en retard (%)
@@ -9,6 +10,7 @@ class SalarySettingsModel {
   final double goodPerformanceRate; // Taux pour bonus standard (80% = 0.8)
 
   SalarySettingsModel({
+    this.farmerId,
     this.onTimeCompletionBonus = 0.10, // 10% par défaut
     this.highProductivityBonus = 0.05, // 5% par défaut
     this.overdueTaskPenalty = 0.02, // 2% par défaut
@@ -22,6 +24,7 @@ class SalarySettingsModel {
   // Convertir en Map pour Supabase
   Map<String, dynamic> toJson() {
     return {
+      'farmer_id': farmerId,
       'on_time_completion_bonus': onTimeCompletionBonus,
       'high_productivity_bonus': highProductivityBonus,
       'overdue_task_penalty': overdueTaskPenalty,
@@ -36,6 +39,7 @@ class SalarySettingsModel {
   // Créer une instance à partir d'un Map
   factory SalarySettingsModel.fromJson(Map<String, dynamic> json) {
     return SalarySettingsModel(
+      farmerId: json['farmer_id'] as String?,
       onTimeCompletionBonus: (json['on_time_completion_bonus'] as num).toDouble(),
       highProductivityBonus: (json['high_productivity_bonus'] as num).toDouble(),
       overdueTaskPenalty: (json['overdue_task_penalty'] as num).toDouble(),
@@ -49,6 +53,7 @@ class SalarySettingsModel {
 
   // Copier l'instance avec des modifications
   SalarySettingsModel copyWith({
+    String? farmerId,
     double? onTimeCompletionBonus,
     double? highProductivityBonus,
     double? overdueTaskPenalty,
@@ -59,6 +64,7 @@ class SalarySettingsModel {
     double? goodPerformanceRate,
   }) {
     return SalarySettingsModel(
+      farmerId: farmerId ?? this.farmerId,
       onTimeCompletionBonus: onTimeCompletionBonus ?? this.onTimeCompletionBonus,
       highProductivityBonus: highProductivityBonus ?? this.highProductivityBonus,
       overdueTaskPenalty: overdueTaskPenalty ?? this.overdueTaskPenalty,

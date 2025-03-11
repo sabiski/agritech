@@ -4,6 +4,8 @@ import '../../../data/models/employee_model.dart';
 import '../../../data/models/employee_task_model.dart';
 import '../../../core/utils/helpers.dart';
 import 'package:uuid/uuid.dart';
+import '../../../data/models/salary_transaction_model.dart';
+import '../../../data/models/performance_model.dart';
 
 class EmployeeController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -407,6 +409,97 @@ class EmployeeController extends GetxController {
       showErrorSnackbar('Erreur', 'Impossible de supprimer la tâche');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Récupérer tous les employés
+  Future<List<EmployeeModel>> getEmployees() async {
+    try {
+      final response = await _supabase
+          .from('employees')
+          .select()
+          .order('full_name');
+
+      return (response as List).map((json) => EmployeeModel.fromJson(json)).toList();
+    } catch (e) {
+      print('Erreur lors de la récupération des employés: $e');
+      return [];
+    }
+  }
+
+  // Récupérer les données de salaire pour une période
+  Future<Map<String, dynamic>> getSalaryData(DateTime startDate, DateTime endDate) async {
+    try {
+      final response = await _supabase
+          .from('salary_transactions')
+          .select('*, employees(full_name)')
+          .gte('payment_date', startDate.toIso8601String())
+          .lte('payment_date', endDate.toIso8601String());
+
+      final transactions = (response as List).map((json) => SalaryTransactionModel.fromJson(json)).toList();
+      
+      double totalSalaries = 0;
+      Map<String, double> salariesByEmployee = {};
+
+      for (var transaction in transactions) {
+        totalSalaries += transaction.amount;
+        salariesByEmployee[transaction.employeeId] = 
+          (salariesByEmployee[transaction.employeeId] ?? 0) + transaction.amount;
+      }
+
+      return {
+        'total_salaries': totalSalaries,
+        'salaries_by_employee': salariesByEmployee,
+        'transactions': transactions,
+      };
+    } catch (e) {
+      print('Erreur lors de la récupération des données de salaire: $e');
+      return {
+        'total_salaries': 0,
+        'salaries_by_employee': {},
+        'transactions': [],
+      };
+    }
+  }
+
+  // Récupérer les données de performance pour une période
+  Future<Map<String, dynamic>> getPerformanceData(DateTime startDate, DateTime endDate) async {
+    try {
+      final response = await _supabase
+          .from('employee_performances')
+          .select('*, employees(full_name)')
+          .gte('date', startDate.toIso8601String())
+          .lte('date', endDate.toIso8601String());
+
+      final performances = (response as List).map((json) => PerformanceModel.fromJson(json)).toList();
+      
+      Map<String, double> averagePerformanceByEmployee = {};
+      Map<String, int> tasksCompletedByEmployee = {};
+
+      for (var performance in performances) {
+        if (!averagePerformanceByEmployee.containsKey(performance.employeeId)) {
+          averagePerformanceByEmployee[performance.employeeId] = 0;
+          tasksCompletedByEmployee[performance.employeeId] = 0;
+        }
+
+        averagePerformanceByEmployee[performance.employeeId] = 
+          (averagePerformanceByEmployee[performance.employeeId]! + performance.score) / 2;
+        tasksCompletedByEmployee[performance.employeeId] = 
+          (tasksCompletedByEmployee[performance.employeeId] ?? 0) + performance.tasksCompleted;
+      }
+
+      return {
+        'average_performance': averagePerformanceByEmployee,
+        'tasks_completed': tasksCompletedByEmployee,
+        'performances': performances,
+      };
+    } catch (e) {
+      print('Erreur lors de la récupération des données de performance: $e');
+      return {
+        'average_performance': {},
+        'tasks_completed': {},
+        'performances': [],
+      };
     }
   }
 } 

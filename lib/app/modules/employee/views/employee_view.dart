@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import 'widgets/employee_stats.dart';
 import 'widgets/employee_list.dart';
 import 'widgets/employee_form.dart';
+import 'widgets/salary_settings_form.dart';
 
 class EmployeeView extends GetView<EmployeeController> {
   const EmployeeView({super.key});
@@ -13,8 +14,19 @@ class EmployeeView extends GetView<EmployeeController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
         title: const Text('Gestion des Employés'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Paramètres de rémunération',
+            onPressed: () => Get.dialog(const SalarySettingsForm()),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: controller.fetchEmployees,

@@ -56,299 +56,320 @@ class FinanceView extends GetView<FinanceController> {
   }
 
   Widget _buildTransactionsTab() {
-    return Column(
-      children: [
-        // En-tête avec statistiques
-        const FinanceStats(),
-        
-        // Graphique
-        Container(
-          height: 200,
-          padding: const EdgeInsets.all(16),
-          child: Obx(() {
-            if (controller.transactions.isEmpty) {
-              return const Center(
-                child: Text('Pas de données disponibles'),
-              );
-            }
+    return Builder(
+      builder: (context) => Column(
+        children: [
+          // En-tête avec statistiques
+          const FinanceStats(),
+          
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Graphique
+                  Container(
+                    height: 200,
+                    padding: const EdgeInsets.all(16),
+                    child: Obx(() {
+                      if (controller.transactions.isEmpty) {
+                        return const Center(
+                          child: Text('Pas de données disponibles'),
+                        );
+                      }
 
-            return LineChart(
-              LineChartData(
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                      return LineChart(
+                        LineChartData(
+                          gridData: FlGridData(show: false),
+                          titlesData: FlTitlesData(
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
+                                  if (value.toInt() >= 0 && value.toInt() < months.length) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        months[value.toInt()],
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                    );
+                                  }
+                                  return const Text('');
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          lineBarsData: [
+                            // Revenus
+                            LineChartBarData(
+                              spots: const [
+                                FlSpot(0, 1.5),
+                                FlSpot(1, 2.0),
+                                FlSpot(2, 1.8),
+                                FlSpot(3, 2.5),
+                                FlSpot(4, 2.2),
+                                FlSpot(5, 3.0),
+                              ],
+                              isCurved: true,
+                              color: Colors.green,
+                              barWidth: 3,
+                              dotData: FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: Colors.green.withOpacity(0.1),
+                              ),
+                            ),
+                            // Dépenses
+                            LineChartBarData(
+                              spots: const [
+                                FlSpot(0, 1.0),
+                                FlSpot(1, 1.2),
+                                FlSpot(2, 1.4),
+                                FlSpot(3, 1.6),
+                                FlSpot(4, 1.8),
+                                FlSpot(5, 2.0),
+                              ],
+                              isCurved: true,
+                              color: Colors.red,
+                              barWidth: 3,
+                              dotData: FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: Colors.red.withOpacity(0.1),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                  
+                  // Filtres
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      children: [
+                        // Barre de recherche
+                        SizedBox(
+                          height: 40,
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Rechercher une transaction...',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                            ),
+                            onChanged: controller.updateSearch,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Filtres
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 8,
+                          children: [
+                            Flexible(
+                              child: Container(
+                                height: 40,
+                                constraints: const BoxConstraints(minWidth: 150),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Obx(() => DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    value: controller.selectedType.value,
+                                    icon: const Icon(Icons.arrow_drop_down, size: 20),
+                                    items: controller.types.map((type) {
+                                      return DropdownMenuItem(
+                                        value: type,
+                                        child: Text(
+                                          type,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      if (value != null) {
+                                        controller.updateSelectedType(value);
+                                      }
+                                    },
+                                  ),
+                                )),
+                              ),
+                            ),
+                            Flexible(
+                              child: Container(
+                                height: 40,
+                                constraints: const BoxConstraints(minWidth: 150),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Obx(() => DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    value: controller.selectedCategory.value,
+                                    icon: const Icon(Icons.arrow_drop_down, size: 20),
+                                    items: controller.categories.map((category) {
+                                      return DropdownMenuItem(
+                                        value: category,
+                                        child: Text(
+                                          category,
+                                          style: const TextStyle(fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      if (value != null) {
+                                        controller.updateSelectedCategory(value);
+                                      }
+                                    },
+                                  ),
+                                )),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
-                        if (value.toInt() >= 0 && value.toInt() < months.length) {
-                          return Text(months[value.toInt()]);
+
+                  // Liste des transactions
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 500,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 600) {
+                          // Vue mobile : une colonne
+                          return const TransactionList();
+                        } else {
+                          // Vue desktop : deux colonnes
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        decoration: BoxDecoration(
+                                          border: Border(
+                                            bottom: BorderSide(
+                                              color: Colors.grey.shade300,
+                                              width: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Revenus',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Expanded(
+                                        child: Obx(() {
+                                          final incomeTransactions = controller.filteredTransactions
+                                              .where((t) => t.type == TransactionType.income)
+                                              .toList();
+                                          return ListView.builder(
+                                            padding: const EdgeInsets.only(right: 8),
+                                            itemCount: incomeTransactions.length,
+                                            itemBuilder: (context, index) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(bottom: 8),
+                                                child: TransactionItem(
+                                                  transaction: incomeTransactions[index],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        decoration: BoxDecoration(
+                                          border: Border(
+                                            bottom: BorderSide(
+                                              color: Colors.grey.shade300,
+                                              width: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'Dépenses',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Expanded(
+                                        child: Obx(() {
+                                          final expenseTransactions = controller.filteredTransactions
+                                              .where((t) => t.type == TransactionType.expense)
+                                              .toList();
+                                          return ListView.builder(
+                                            padding: const EdgeInsets.only(left: 8),
+                                            itemCount: expenseTransactions.length,
+                                            itemBuilder: (context, index) {
+                                              return Padding(
+                                                padding: const EdgeInsets.only(bottom: 8),
+                                                child: TransactionItem(
+                                                  transaction: expenseTransactions[index],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
                         }
-                        return const Text('');
                       },
                     ),
                   ),
-                ),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  // Revenus
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 1.5),
-                      FlSpot(1, 2.0),
-                      FlSpot(2, 1.8),
-                      FlSpot(3, 2.5),
-                      FlSpot(4, 2.2),
-                      FlSpot(5, 3.0),
-                    ],
-                    isCurved: true,
-                    color: Colors.green,
-                    barWidth: 3,
-                    dotData: FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: Colors.green.withOpacity(0.1),
-                    ),
-                  ),
-                  // Dépenses
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 1.0),
-                      FlSpot(1, 1.2),
-                      FlSpot(2, 1.4),
-                      FlSpot(3, 1.6),
-                      FlSpot(4, 1.8),
-                      FlSpot(5, 2.0),
-                    ],
-                    isCurved: true,
-                    color: Colors.red,
-                    barWidth: 3,
-                    dotData: FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: Colors.red.withOpacity(0.1),
-                    ),
-                  ),
                 ],
               ),
-            );
-          }),
-        ),
-        
-        // Filtres
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            children: [
-              // Barre de recherche
-              SizedBox(
-                height: 40,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher une transaction...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                  ),
-                  onChanged: controller.updateSearch,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Filtres
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Obx(() => DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: controller.selectedType.value,
-                          icon: const Icon(Icons.arrow_drop_down, size: 20),
-                          items: controller.types.map((type) {
-                            return DropdownMenuItem(
-                              value: type,
-                              child: Text(
-                                type,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              controller.updateSelectedType(value);
-                            }
-                          },
-                        ),
-                      )),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Obx(() => DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: controller.selectedCategory.value,
-                          icon: const Icon(Icons.arrow_drop_down, size: 20),
-                          items: controller.categories.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(
-                                category,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              controller.updateSelectedCategory(value);
-                            }
-                          },
-                        ),
-                      )),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-
-        // Liste des transactions
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 600) {
-                // Vue mobile : une colonne
-                return const TransactionList();
-              } else {
-                // Vue desktop : deux colonnes
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: Colors.grey.shade300,
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                              child: const Text(
-                                'Revenus',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: Obx(() {
-                                final incomeTransactions = controller.filteredTransactions
-                                    .where((t) => t.type == TransactionType.income)
-                                    .toList();
-                                return ListView.builder(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  itemCount: incomeTransactions.length,
-                                  itemBuilder: (context, index) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: TransactionItem(
-                                        transaction: incomeTransactions[index],
-                                      ),
-                                    );
-                                  },
-                                );
-                              }),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: Colors.grey.shade300,
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                              child: const Text(
-                                'Dépenses',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: Obx(() {
-                                final expenseTransactions = controller.filteredTransactions
-                                    .where((t) => t.type == TransactionType.expense)
-                                    .toList();
-                                return ListView.builder(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  itemCount: expenseTransactions.length,
-                                  itemBuilder: (context, index) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: TransactionItem(
-                                        transaction: expenseTransactions[index],
-                                      ),
-                                    );
-                                  },
-                                );
-                              }),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

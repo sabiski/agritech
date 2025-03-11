@@ -277,4 +277,24 @@ class FinanceController extends GetxController {
       return [];
     }
   }
+
+  // Récupérer les transactions par période
+  Future<List<TransactionModel>> getTransactionsByPeriod({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final response = await _supabase
+          .from('transactions')
+          .select()
+          .gte('date', startDate.toIso8601String())
+          .lte('date', endDate.toIso8601String())
+          .order('date', ascending: false);
+
+      return (response as List).map((json) => TransactionModel.fromJson(json)).toList();
+    } catch (e) {
+      print('Erreur lors de la récupération des transactions: $e');
+      return [];
+    }
+  }
 } 

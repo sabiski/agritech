@@ -22,6 +22,8 @@ import '../modules/finance/bindings/finance_binding.dart';
 import '../modules/finance/views/finance_view.dart';
 import '../modules/employee/bindings/employee_binding.dart';
 import '../modules/employee/views/employee_view.dart';
+import '../modules/report/bindings/report_binding.dart';
+import '../modules/report/views/report_view.dart';
 
 part 'app_routes.dart';
 
@@ -108,6 +110,11 @@ class AppPages {
       name: _Paths.EMPLOYEE,
       page: () => const EmployeeView(),
       binding: EmployeeBinding(),
+    ),
+    GetPage(
+      name: _Paths.REPORT,
+      page: () => const ReportView(),
+      binding: ReportBinding(),
     ),
   ];
 } 

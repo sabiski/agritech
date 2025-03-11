@@ -19,6 +19,7 @@ abstract class Routes {
   static const CROPS = _Paths.CROPS;
   static const EMPLOYEE = _Paths.EMPLOYEE;
   static const EMPLOYEE_DETAIL = _Paths.EMPLOYEE_DETAIL;
+  static const REPORT = _Paths.REPORT;
 }
 
 abstract class _Paths {
@@ -38,4 +39,5 @@ abstract class _Paths {
   static const FINANCE = '/finance';
   static const EMPLOYEE = '/employee';
   static const EMPLOYEE_DETAIL = '/employee/detail';
+  static const REPORT = '/report';
 } 

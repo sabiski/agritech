@@ -87,7 +87,7 @@ class EmployeeSalaryHistory extends StatelessWidget {
 
   Widget _buildSalaryItem(BuildContext context, SalaryTransactionModel transaction) {
     final theme = Theme.of(context);
-    final hasBonus = transaction.bonusAmount > 0;
+    final hasBonus = (transaction.bonus ?? 0) > 0;
 
     return Card(
       child: Padding(
@@ -134,7 +134,7 @@ class EmployeeSalaryHistory extends StatelessWidget {
                       style: theme.textTheme.bodyMedium,
                     ),
                     Text(
-                      currencyFormat.format(transaction.baseAmount),
+                      currencyFormat.format(transaction.amount - (transaction.bonus ?? 0.0)),
                       style: theme.textTheme.titleMedium,
                     ),
                   ],
@@ -150,7 +150,7 @@ class EmployeeSalaryHistory extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '+ ${currencyFormat.format(transaction.bonusAmount)}',
+                        '+ ${currencyFormat.format(transaction.bonus ?? 0.0)}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: Colors.green,
                         ),
@@ -168,23 +168,18 @@ class EmployeeSalaryHistory extends StatelessWidget {
                   style: theme.textTheme.titleMedium,
                 ),
                 Text(
-                  currencyFormat.format(transaction.totalAmount),
+                  currencyFormat.format(transaction.amount),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            if (transaction.performanceMetrics != null) ...[
+            if (transaction.bonusReason != null) ...[
               const SizedBox(height: 16),
-              ExpansionTile(
-                title: const Text('Détails de performance'),
-                children: [
-                  _buildPerformanceDetails(
-                    context,
-                    transaction.performanceMetrics!,
-                  ),
-                ],
+              Text(
+                'Raison du bonus : ${transaction.bonusReason}',
+                style: theme.textTheme.bodySmall,
               ),
             ],
           ],
