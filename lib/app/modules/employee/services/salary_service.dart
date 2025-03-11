@@ -18,6 +18,60 @@ class SalaryService extends GetxService {
   
   // Observable pour l'historique des salaires
   final RxList<SalaryTransactionModel> salaryHistory = <SalaryTransactionModel>[].obs;
+  
+  // Observable pour le budget salarial
+  final Rx<double> salaryBudget = 0.0.obs;
+  final Rx<double> totalSalaries = 0.0.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadSalaryBudget();
+    _calculateTotalSalaries();
+  }
+
+  // Charger le budget salarial depuis les transactions
+  Future<void> _loadSalaryBudget() async {
+    try {
+      final transactions = await _financeController.getTransactionsByCategory(
+        category: 'Salaires',
+        period: null,
+      );
+      
+      // Trouver la transaction de budget la plus récente
+      final budgetTransaction = transactions.lastWhere(
+        (t) => t.metadata == null || (t.metadata as Map<String, dynamic>)['type'] != 'salary_payment',
+        orElse: () => throw Exception('Aucun budget salarial défini'),
+      );
+      
+      salaryBudget.value = budgetTransaction.amount ?? 0.0;
+      print('Budget salarial chargé: ${salaryBudget.value}');
+    } catch (e) {
+      print('Erreur lors du chargement du budget salarial: $e');
+      salaryBudget.value = 0.0;
+    }
+  }
+
+  // Calculer la somme des salaires actuels
+  void _calculateTotalSalaries() {
+    final total = _employeeController.employees
+        .where((e) => e.status == EmployeeStatus.active)
+        .fold<double>(0.0, (sum, employee) => sum + employee.salary);
+    
+    totalSalaries.value = total;
+    print('Total des salaires: ${totalSalaries.value}');
+  }
+
+  // Vérifier si l'ajout d'un nouveau salaire dépasse le budget
+  bool canAddSalary(double newSalary) {
+    final projectedTotal = totalSalaries.value + newSalary;
+    return projectedTotal <= salaryBudget.value;
+  }
+
+  // Obtenir le montant restant du budget
+  double getRemainingBudget() {
+    return salaryBudget.value - totalSalaries.value;
+  }
 
   // Calculer le bonus basé sur la performance
   double calculatePerformanceBonus(String employeeId, double baseSalary) {
@@ -74,6 +128,7 @@ class SalaryService extends GetxService {
         'type': 'salary_payment',
         'employee_id': employeeId,
         'employee_name': employee.fullName,
+        'position': employee.position,
         'base_amount': baseSalary,
         'bonus_amount': bonusAmount,
         'period': period,
@@ -196,5 +251,25 @@ class SalaryService extends GetxService {
         .where((t) => t.type == 'expense' && 
                      (t.metadata as Map<String, dynamic>?)?['type'] == 'salary_payment')
         .fold<double>(0.0, (sum, transaction) => sum + (transaction.amount ?? 0.0));
+  }
+
+  // Obtenir les informations de salaire d'un employé
+  Map<String, dynamic> getEmployeeSalaryInfo(String employeeId) {
+    final employee = _employeeController.employees.firstWhere(
+      (e) => e.id == employeeId,
+      orElse: () => throw Exception('Employé non trouvé'),
+    );
+
+    final baseSalary = employee.salary;
+    final bonusAmount = calculatePerformanceBonus(employeeId, baseSalary);
+    final totalSalary = baseSalary + bonusAmount;
+
+    return {
+      'employee': employee,
+      'base_salary': baseSalary,
+      'bonus_amount': bonusAmount,
+      'total_salary': totalSalary,
+      'performance_metrics': _analyticsService.getEmployeePerformanceStats(employeeId),
+    };
   }
 } 

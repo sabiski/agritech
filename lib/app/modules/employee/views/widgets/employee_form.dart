@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../controllers/employee_controller.dart';
+import '../../services/salary_service.dart';
 import '../../../../data/models/employee_model.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +22,7 @@ class EmployeeForm extends StatefulWidget {
 class _EmployeeFormState extends State<EmployeeForm> {
   final _formKey = GlobalKey<FormState>();
   final _controller = Get.find<EmployeeController>();
+  final _salaryService = Get.find<SalaryService>();
   final _scrollController = ScrollController();
   
   late TextEditingController _fullNameController;
@@ -78,12 +80,29 @@ class _EmployeeFormState extends State<EmployeeForm> {
       setState(() => _isLoading = true);
       
       try {
+        final newSalary = double.parse(_salaryController.text);
+        
+        // Vérifier si le nouveau salaire respecte le budget
+        if (!_salaryService.canAddSalary(newSalary)) {
+          Get.snackbar(
+            'Budget dépassé',
+            'Le salaire proposé dépasse le budget disponible. Budget restant: ${NumberFormat.currency(
+              symbol: 'FCFA ',
+              decimalDigits: 0,
+            ).format(_salaryService.getRemainingBudget())}',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+          );
+          return;
+        }
+
         if (widget.employee != null) {
           final updatedEmployee = EmployeeModel(
             id: widget.employee!.id,
             fullName: _fullNameController.text,
             position: _positionController.text,
-            salary: double.parse(_salaryController.text),
+            salary: newSalary,
             phoneNumber: _phoneController.text,
             email: _emailController.text,
             status: widget.employee!.status,
@@ -100,7 +119,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
           await _controller.addEmployee(
             fullName: _fullNameController.text,
             position: _positionController.text,
-            salary: double.parse(_salaryController.text),
+            salary: newSalary,
             phoneNumber: _phoneController.text,
             email: _emailController.text,
             startDate: _startDate,
@@ -167,26 +186,44 @@ class _EmployeeFormState extends State<EmployeeForm> {
                   const SizedBox(height: 16),
                   
                   // Salaire
-                  TextFormField(
-                    controller: _salaryController,
-                    decoration: const InputDecoration(
-                      labelText: 'Salaire',
-                      border: OutlineInputBorder(),
-                      prefixText: 'FCFA ',
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: _salaryController,
+                        decoration: const InputDecoration(
+                          labelText: 'Salaire',
+                          border: OutlineInputBorder(),
+                          prefixText: 'FCFA ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer le salaire';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Veuillez entrer un nombre valide';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Obx(() => Text(
+                        'Budget restant: ${NumberFormat.currency(
+                          symbol: 'FCFA ',
+                          decimalDigits: 0,
+                        ).format(_salaryService.getRemainingBudget())}',
+                        style: TextStyle(
+                          color: _salaryService.getRemainingBudget() > 0 
+                            ? Colors.green 
+                            : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
                     ],
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer le salaire';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Veuillez entrer un nombre valide';
-                      }
-                      return null;
-                    },
                   ),
                   const SizedBox(height: 16),
                   
