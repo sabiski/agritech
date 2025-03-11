@@ -78,10 +78,10 @@ class EmployeeController extends GetxController {
       
       final response = await _supabase
           .from('employee_tasks')
-          .select('*, employees!inner(*)')
+          .select()
           .order('due_date', ascending: true);
       
-      print('Tasks response: $response'); // Pour le débogage
+      print('Tasks response: $response');
       
       final List<EmployeeTaskModel> tasksList = response
           .map<EmployeeTaskModel>((json) => EmployeeTaskModel.fromJson(json))
@@ -275,6 +275,22 @@ class EmployeeController extends GetxController {
     }
   }
 
+  // Obtenir les tâches d'un employé
+  List<EmployeeTaskModel> getEmployeeTasks(String employeeId) {
+    print('Getting tasks for employee: $employeeId');
+    print('Available tasks: ${tasks.length}');
+    print('All tasks: ${tasks.map((t) => {'id': t.id, 'employee_id': t.employeeId}).toList()}');
+    
+    final employeeTasks = tasks.where((task) {
+      final matches = task.employeeId == employeeId;
+      print('Checking task ${task.id}: employeeId=${task.employeeId}, matches=$matches');
+      return matches;
+    }).toList();
+    
+    print('Found tasks: ${employeeTasks.length}');
+    return employeeTasks;
+  }
+
   // Ajouter une nouvelle tâche
   Future<void> addTask({
     required String title,
@@ -295,9 +311,12 @@ class EmployeeController extends GetxController {
         status: TaskStatus.pending,
         priority: priority,
         employeeId: employeeId,
+        completedAt: null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
+      
+      print('Adding task: ${task.toJson()}');
       
       await _supabase
           .from('employee_tasks')
@@ -322,6 +341,8 @@ class EmployeeController extends GetxController {
       isLoading.value = true;
       error.value = '';
       
+      print('Updating task: ${task.toJson()}');
+      
       await _supabase
           .from('employee_tasks')
           .update(task.toJson())
@@ -337,6 +358,32 @@ class EmployeeController extends GetxController {
       showErrorSnackbar('Erreur', 'Impossible de mettre à jour la tâche');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Marquer une tâche comme terminée
+  Future<void> completeTask(String taskId) async {
+    try {
+      final task = tasks.firstWhere((t) => t.id == taskId);
+      final updatedTask = EmployeeTaskModel(
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        dueDate: task.dueDate,
+        status: TaskStatus.completed,
+        priority: task.priority,
+        employeeId: task.employeeId,
+        completedAt: DateTime.now(),
+        createdAt: task.createdAt,
+        updatedAt: DateTime.now(),
+      );
+      
+      await updateTask(updatedTask);
+      
+    } catch (e) {
+      print('Error completing task: $e');
+      error.value = 'Erreur lors de la complétion de la tâche: ${e.toString()}';
+      showErrorSnackbar('Erreur', 'Impossible de marquer la tâche comme terminée');
     }
   }
 
@@ -361,14 +408,5 @@ class EmployeeController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // Obtenir les tâches d'un employé
-  List<EmployeeTaskModel> getEmployeeTasks(String employeeId) {
-    print('Getting tasks for employee: $employeeId'); // Pour le débogage
-    print('Available tasks: ${tasks.length}'); // Pour le débogage
-    final employeeTasks = tasks.where((task) => task.employeeId == employeeId).toList();
-    print('Found tasks: ${employeeTasks.length}'); // Pour le débogage
-    return employeeTasks;
   }
 } 

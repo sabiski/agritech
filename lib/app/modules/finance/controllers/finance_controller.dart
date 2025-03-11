@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../core/utils/helpers.dart';
+import 'package:uuid/uuid.dart';
 
 class FinanceController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -192,5 +193,88 @@ class FinanceController extends GetxController {
   // Mettre à jour le type sélectionné
   void updateSelectedType(String type) {
     selectedType.value = type;
+  }
+
+  // Créer une nouvelle transaction
+  Future<void> createTransaction({
+    required double amount,
+    required String type,
+    required String category,
+    required String description,
+    required String farmerId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      isLoading.value = true;
+      error.value = '';
+      
+      final transaction = TransactionModel(
+        id: const Uuid().v4(),
+        amount: amount,
+        type: type == 'income' ? TransactionType.income : TransactionType.expense,
+        category: category,
+        description: description,
+        date: DateTime.now(),
+        metadata: metadata,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        farmerId: farmerId,
+      );
+      
+      print('Creating transaction: ${transaction.toJson()}');
+      
+      await _supabase
+          .from('transactions')
+          .insert(transaction.toJson());
+      
+      await fetchTransactions();
+      showSuccessSnackbar('Succès', 'Transaction créée avec succès');
+      
+    } catch (e, stackTrace) {
+      print('Error creating transaction: $e');
+      print('Stack trace: $stackTrace');
+      error.value = 'Erreur lors de la création de la transaction: ${e.toString()}';
+      showErrorSnackbar('Erreur lors de la création de la transaction', e.toString());
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Obtenir les transactions par catégorie et période
+  Future<List<TransactionModel>> getTransactionsByCategory({
+    required String category,
+    String? period,
+  }) async {
+    try {
+      var query = _supabase
+          .from('transactions')
+          .select()
+          .eq('category', category);
+      
+      if (period != null) {
+        // Format de period: "YYYY-MM"
+        final year = int.parse(period.split('-')[0]);
+        final month = int.parse(period.split('-')[1]);
+        final startDate = DateTime(year, month, 1);
+        final endDate = DateTime(year, month + 1, 0);
+        
+        query = query
+          .gte('date', startDate.toIso8601String())
+          .lte('date', endDate.toIso8601String());
+      }
+      
+      final response = await query.order('date', ascending: false);
+      
+      return response
+          .map<TransactionModel>((json) => TransactionModel.fromJson(json))
+          .toList();
+          
+    } catch (e, stackTrace) {
+      print('Error fetching transactions by category: $e');
+      print('Stack trace: $stackTrace');
+      error.value = 'Erreur lors de la récupération des transactions: ${e.toString()}';
+      return [];
+    }
   }
 } 

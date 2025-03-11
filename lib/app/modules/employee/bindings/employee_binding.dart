@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../controllers/employee_controller.dart';
 import '../services/employee_analytics_service.dart';
+import '../services/salary_settings_service.dart';
 
 class EmployeeBinding extends Bindings {
   @override
@@ -10,6 +11,9 @@ class EmployeeBinding extends Bindings {
     );
     Get.lazyPut<EmployeeAnalyticsService>(
       () => EmployeeAnalyticsService(),
+    );
+    Get.lazyPut<SalarySettingsService>(
+      () => SalarySettingsService(),
     );
   }
 } 
