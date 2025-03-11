@@ -6,6 +6,10 @@ import '../routes/app_pages.dart';
 class AuthService extends GetxService {
   final supabase = Supabase.instance.client;
 
+  Future<AuthService> init() async {
+    return this;
+  }
+
   User? get currentUser => supabase.auth.currentUser;
 
   // Connexion

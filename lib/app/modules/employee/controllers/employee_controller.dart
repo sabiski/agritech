@@ -427,79 +427,70 @@ class EmployeeController extends GetxController {
     }
   }
 
-  // Récupérer les données de salaire pour une période
+  // Récupérer les données de salaire pour une période donnée
   Future<Map<String, dynamic>> getSalaryData(DateTime startDate, DateTime endDate) async {
     try {
       final response = await _supabase
           .from('salary_transactions')
-          .select('*, employees(full_name)')
-          .gte('payment_date', startDate.toIso8601String())
-          .lte('payment_date', endDate.toIso8601String());
+          .select('amount, type, date, employees!inner(full_name)')
+          .gte('date', startDate.toIso8601String())
+          .lte('date', endDate.toIso8601String());
 
-      final transactions = (response as List).map((json) => SalaryTransactionModel.fromJson(json)).toList();
-      
       double totalSalaries = 0;
-      Map<String, double> salariesByEmployee = {};
-
-      for (var transaction in transactions) {
-        totalSalaries += transaction.amount;
-        salariesByEmployee[transaction.employeeId] = 
-          (salariesByEmployee[transaction.employeeId] ?? 0) + transaction.amount;
+      for (final transaction in response) {
+        if (transaction['type'] == 'salary') {
+          totalSalaries += transaction['amount'];
+        }
       }
 
       return {
         'total_salaries': totalSalaries,
-        'salaries_by_employee': salariesByEmployee,
-        'transactions': transactions,
+        'transactions': response,
       };
     } catch (e) {
       print('Erreur lors de la récupération des données de salaire: $e');
-      return {
-        'total_salaries': 0,
-        'salaries_by_employee': {},
-        'transactions': [],
-      };
+      rethrow;
     }
   }
 
-  // Récupérer les données de performance pour une période
+  // Récupérer les données de performance pour une période donnée
   Future<Map<String, dynamic>> getPerformanceData(DateTime startDate, DateTime endDate) async {
     try {
       final response = await _supabase
           .from('employee_performances')
-          .select('*, employees(full_name)')
+          .select('score, date, comments, employees!inner(id, full_name)')
           .gte('date', startDate.toIso8601String())
           .lte('date', endDate.toIso8601String());
 
-      final performances = (response as List).map((json) => PerformanceModel.fromJson(json)).toList();
+      Map<String, Map<String, dynamic>> performanceByEmployee = {};
       
-      Map<String, double> averagePerformanceByEmployee = {};
-      Map<String, int> tasksCompletedByEmployee = {};
-
-      for (var performance in performances) {
-        if (!averagePerformanceByEmployee.containsKey(performance.employeeId)) {
-          averagePerformanceByEmployee[performance.employeeId] = 0;
-          tasksCompletedByEmployee[performance.employeeId] = 0;
+      for (final performance in response) {
+        final employeeId = performance['employees']['id'];
+        final employeeName = performance['employees']['full_name'];
+        
+        if (!performanceByEmployee.containsKey(employeeId)) {
+          performanceByEmployee[employeeId] = {
+            'employee_name': employeeName,
+            'scores': <int>[],
+            'average_score': 0.0,
+          };
         }
-
-        averagePerformanceByEmployee[performance.employeeId] = 
-          (averagePerformanceByEmployee[performance.employeeId]! + performance.score) / 2;
-        tasksCompletedByEmployee[performance.employeeId] = 
-          (tasksCompletedByEmployee[performance.employeeId] ?? 0) + performance.tasksCompleted;
+        
+        performanceByEmployee[employeeId]!['scores'].add(performance['score']);
       }
 
-      return {
-        'average_performance': averagePerformanceByEmployee,
-        'tasks_completed': tasksCompletedByEmployee,
-        'performances': performances,
-      };
+      // Calculer les moyennes
+      performanceByEmployee.forEach((employeeId, data) {
+        final scores = data['scores'] as List<int>;
+        if (scores.isNotEmpty) {
+          data['average_score'] = scores.reduce((a, b) => a + b) / scores.length;
+        }
+      });
+
+      return performanceByEmployee;
     } catch (e) {
       print('Erreur lors de la récupération des données de performance: $e');
-      return {
-        'average_performance': {},
-        'tasks_completed': {},
-        'performances': [],
-      };
+      rethrow;
     }
   }
 } 

@@ -15,6 +15,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:universal_html/html.dart' as html;
 
 class ReportController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -220,58 +222,74 @@ class ReportController extends GetxController {
   }
 
   // Exporter le rapport en PDF
-  Future<String?> exportToPdf(ReportModel report) async {
+  Future<void> exportToPdf(ReportModel report) async {
     try {
       final pdf = pw.Document();
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/report_${report.id}.pdf');
 
-      // Ajouter l'en-tête
-      pdf.addPage(
-        pw.Page(
-          build: (context) => pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                report.title,
-                style: pw.TextStyle(
-                  fontSize: 24,
-                  fontWeight: pw.FontWeight.bold,
-                ),
+      // En-tête du rapport
+      pdf.addPage(pw.Page(
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              report.title,
+              style: pw.TextStyle(
+                fontSize: 24,
+                fontWeight: pw.FontWeight.bold,
               ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'Période: ${DateFormat('dd/MM/yyyy').format(report.startDate)} - ${DateFormat('dd/MM/yyyy').format(report.endDate)}',
-              ),
-              pw.SizedBox(height: 20),
-              _buildPdfContent(report),
-            ],
-          ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'Type: ${report.type.toString().split('.').last}',
+              style: const pw.TextStyle(fontSize: 14),
+            ),
+            pw.Text(
+              'Période: ${DateFormat('dd/MM/yyyy').format(report.startDate)} - ${DateFormat('dd/MM/yyyy').format(report.endDate)}',
+              style: const pw.TextStyle(fontSize: 14),
+            ),
+            pw.SizedBox(height: 20),
+            _buildPdfContent(report),
+          ],
         ),
-      );
+      ));
 
-      // Sauvegarder le PDF
-      await file.writeAsBytes(await pdf.save());
+      final bytes = await pdf.save();
 
-      // Mettre à jour le rapport dans Supabase
-      await _supabase
-          .from('reports')
-          .update({
-            'exported_at': DateTime.now().toIso8601String(),
-            'export_format': ReportFormat.pdf.toString(),
-          })
-          .eq('id', report.id);
-
-      return file.path;
-
+      if (kIsWeb) {
+        // Pour le web, télécharger directement
+        final blob = html.Blob([bytes], 'application/pdf');
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.document.createElement('a') as html.AnchorElement
+          ..href = url
+          ..style.display = 'none'
+          ..download = '${report.title.toLowerCase().replaceAll(' ', '_')}.pdf';
+        html.document.body?.children.add(anchor);
+        anchor.click();
+        html.document.body?.children.remove(anchor);
+        html.Url.revokeObjectUrl(url);
+      } else {
+        // Pour mobile/desktop, sauvegarder dans les documents
+        final directory = await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/${report.title.toLowerCase().replaceAll(' ', '_')}.pdf');
+        await file.writeAsBytes(bytes);
+        Get.snackbar(
+          'Succès',
+          'Le rapport a été exporté en PDF',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      }
     } catch (e) {
-      print('Erreur lors de l\'export en PDF: $e');
-      error.value = 'Erreur lors de l\'export en PDF: $e';
-      return null;
+      print('Erreur lors de l\'export PDF: $e');
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'exporter le rapport en PDF',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
-  // Construire le contenu du PDF selon le type de rapport
   pw.Widget _buildPdfContent(ReportModel report) {
     switch (report.type) {
       case ReportType.finance:
@@ -282,34 +300,62 @@ class ReportController extends GetxController {
         return _buildStockPdfContent(report.data);
       case ReportType.crop:
         return _buildCropPdfContent(report.data);
-      default:
-        return pw.Container();
     }
   }
 
-  // Contenu PDF pour le rapport financier
   pw.Widget _buildFinancePdfContent(Map<String, dynamic> data) {
+    final totalRevenue = data['total_revenue'] as double;
+    final totalExpenses = data['total_expenses'] as double;
+    final netProfit = data['net_profit'] as double;
+    final revenueByCategory = data['revenue_by_category'] as Map<String, dynamic>;
+    final expensesByCategory = data['expenses_by_category'] as Map<String, dynamic>;
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          'Résumé Financier',
+          'Résumé financier',
           style: pw.TextStyle(
             fontSize: 18,
             fontWeight: pw.FontWeight.bold,
           ),
         ),
         pw.SizedBox(height: 10),
-        pw.Text('Revenus totaux: ${NumberFormat.currency(symbol: 'FCFA').format(data['total_revenue'])}'),
-        pw.Text('Dépenses totales: ${NumberFormat.currency(symbol: 'FCFA').format(data['total_expenses'])}'),
-        pw.Text('Bénéfice net: ${NumberFormat.currency(symbol: 'FCFA').format(data['net_profit'])}'),
-        // TODO: Ajouter des graphiques et plus de détails
+        pw.Text('Revenus totaux: ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(totalRevenue)}'),
+        pw.Text('Dépenses totales: ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(totalExpenses)}'),
+        pw.Text('Bénéfice net: ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(netProfit)}'),
+        pw.SizedBox(height: 20),
+        pw.Text(
+          'Revenus par catégorie',
+          style: pw.TextStyle(
+            fontSize: 16,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        ...revenueByCategory.entries.map((entry) => pw.Text(
+          '${entry.key}: ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(entry.value)}',
+        )),
+        pw.SizedBox(height: 20),
+        pw.Text(
+          'Dépenses par catégorie',
+          style: pw.TextStyle(
+            fontSize: 16,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        ...expensesByCategory.entries.map((entry) => pw.Text(
+          '${entry.key}: ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(entry.value)}',
+        )),
       ],
     );
   }
 
   // Contenu PDF pour le rapport des employés
   pw.Widget _buildEmployeePdfContent(Map<String, dynamic> data) {
+    final salaryData = data['salary_data'] as Map<String, dynamic>;
+    final performanceData = data['performance_data'] as Map<String, dynamic>;
+    final employees = data['employees'] as List;
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -320,9 +366,48 @@ class ReportController extends GetxController {
             fontWeight: pw.FontWeight.bold,
           ),
         ),
+        pw.SizedBox(height: 20),
+        
+        // Résumé des salaires
+        pw.Text(
+          'Résumé des salaires',
+          style: pw.TextStyle(
+            fontSize: 16,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
         pw.SizedBox(height: 10),
-        pw.Text('Total des salaires: ${NumberFormat.currency(symbol: 'FCFA').format(data['salary_data']['total_salaries'])}'),
-        // TODO: Ajouter des graphiques et plus de détails
+        pw.Text('Total des salaires: ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(salaryData['total_salaries'])}'),
+        pw.SizedBox(height: 20),
+
+        // Liste des employés avec leurs salaires
+        pw.Text(
+          'Détails par employé',
+          style: pw.TextStyle(
+            fontSize: 16,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        ...employees.map((employee) {
+          final employeeId = employee['id'];
+          final performanceInfo = performanceData[employeeId];
+          final averageScore = performanceInfo?['average_score'] ?? 0.0;
+
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                employee['full_name'],
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text('Position: ${employee['position']}'),
+              pw.Text('Salaire: ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(employee['salary'])}'),
+              pw.Text('Performance moyenne: ${averageScore.toStringAsFixed(1)}/10'),
+              pw.SizedBox(height: 10),
+            ],
+          );
+        }).toList(),
       ],
     );
   }
@@ -364,130 +449,228 @@ class ReportController extends GetxController {
   }
 
   // Exporter le rapport en Excel
-  Future<String?> exportToExcel(ReportModel report) async {
+  Future<void> exportToExcel(ReportModel report) async {
     try {
       final excel = Excel.createExcel();
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/report_${report.id}.xlsx');
-      final sheet = excel['Report'];
+      final sheet = excel[report.type.toString().split('.').last];
 
-      // Ajouter l'en-tête
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0))
-        ..value = TextCellValue(report.title)
-        ..cellStyle = CellStyle(
-          bold: true,
-          fontSize: 14,
+      // En-tête du rapport
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0)).value = TextCellValue(report.title);
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 1)).value = 
+        TextCellValue('Période: ${DateFormat('dd/MM/yyyy').format(report.startDate)} - ${DateFormat('dd/MM/yyyy').format(report.endDate)}');
+
+      // Contenu selon le type de rapport
+      switch (report.type) {
+        case ReportType.finance:
+          _addFinanceDataToExcel(sheet, report.data);
+          break;
+        case ReportType.employee:
+          _addEmployeeDataToExcel(sheet, report.data);
+          break;
+        case ReportType.stock:
+          _addStockDataToExcel(sheet, report.data);
+          break;
+        case ReportType.crop:
+          _addCropDataToExcel(sheet, report.data);
+          break;
+      }
+
+      final bytes = excel.save();
+      
+      if (kIsWeb) {
+        // Pour le web, télécharger directement
+        final blob = html.Blob([bytes], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.document.createElement('a') as html.AnchorElement
+          ..href = url
+          ..style.display = 'none'
+          ..download = '${report.title.toLowerCase().replaceAll(' ', '_')}.xlsx';
+        html.document.body?.children.add(anchor);
+        anchor.click();
+        html.document.body?.children.remove(anchor);
+        html.Url.revokeObjectUrl(url);
+      } else {
+        // Pour mobile/desktop, sauvegarder dans les documents
+        final directory = await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/${report.title.toLowerCase().replaceAll(' ', '_')}.xlsx');
+        await file.writeAsBytes(bytes!);
+        Get.snackbar(
+          'Succès',
+          'Le rapport a été exporté en Excel',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
         );
-
-      // Ajouter le contenu selon le type de rapport
-      _addExcelContent(sheet, report);
-
-      // Sauvegarder le fichier Excel
-      await file.writeAsBytes(excel.encode()!);
-
-      // Mettre à jour le rapport dans Supabase
-      await _supabase
-          .from('reports')
-          .update({
-            'exported_at': DateTime.now().toIso8601String(),
-            'export_format': ReportFormat.excel.toString(),
-          })
-          .eq('id', report.id);
-
-      return file.path;
-
+      }
     } catch (e) {
-      print('Erreur lors de l\'export en Excel: $e');
-      error.value = 'Erreur lors de l\'export en Excel: $e';
-      return null;
+      print('Erreur lors de l\'export Excel: $e');
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'exporter le rapport en Excel',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
-  // Ajouter le contenu Excel selon le type de rapport
-  void _addExcelContent(Sheet sheet, ReportModel report) {
-    switch (report.type) {
-      case ReportType.finance:
-        _addFinanceExcelContent(sheet, report.data);
-        break;
-      case ReportType.employee:
-        _addEmployeeExcelContent(sheet, report.data);
-        break;
-      case ReportType.stock:
-        _addStockExcelContent(sheet, report.data);
-        break;
-      case ReportType.crop:
-        _addCropExcelContent(sheet, report.data);
-        break;
+  void _addFinanceDataToExcel(Sheet sheet, Map<String, dynamic> data) {
+    int currentRow = 0;
+
+    // Add financial summary
+    var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Résumé financier');
+    cell.cellStyle = CellStyle(bold: true);
+    currentRow++;
+
+    // Add total revenue
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Revenus totaux');
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+    cell.value = DoubleCellValue(data['total_revenue'] ?? 0.0);
+    cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+    currentRow++;
+
+    // Add total expenses
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Dépenses totales');
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+    cell.value = DoubleCellValue(data['total_expenses'] ?? 0.0);
+    cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+    currentRow++;
+
+    // Add net profit
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Bénéfice net');
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+    cell.value = DoubleCellValue(data['net_profit'] ?? 0.0);
+    cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+    currentRow += 2;
+
+    // Add revenue by category
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Revenus par catégorie');
+    cell.cellStyle = CellStyle(bold: true);
+    currentRow++;
+
+    Map<String, double> revenueByCategory = Map<String, double>.from(data['revenue_by_category'] ?? {});
+    revenueByCategory.forEach((category, amount) {
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+      cell.value = TextCellValue(category);
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+      cell.value = DoubleCellValue(amount);
+      cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+      currentRow++;
+    });
+    currentRow++;
+
+    // Add expenses by category
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Dépenses par catégorie');
+    cell.cellStyle = CellStyle(bold: true);
+    currentRow++;
+
+    Map<String, double> expensesByCategory = Map<String, double>.from(data['expenses_by_category'] ?? {});
+    expensesByCategory.forEach((category, amount) {
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+      cell.value = TextCellValue(category);
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+      cell.value = DoubleCellValue(amount);
+      cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+      currentRow++;
+    });
+  }
+
+  void _addEmployeeDataToExcel(Sheet sheet, Map<String, dynamic> data) {
+    int currentRow = 0;
+
+    // Add headers
+    var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Employé');
+    cell.cellStyle = CellStyle(bold: true);
+
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+    cell.value = TextCellValue('Salaire');
+    cell.cellStyle = CellStyle(bold: true);
+
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: currentRow));
+    cell.value = TextCellValue('Bonus');
+    cell.cellStyle = CellStyle(bold: true);
+
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: currentRow));
+    cell.value = TextCellValue('Total');
+    cell.cellStyle = CellStyle(bold: true);
+    currentRow++;
+
+    // Add employee data
+    List<Map<String, dynamic>> employees = List<Map<String, dynamic>>.from(data['employees'] ?? []);
+    for (var employee in employees) {
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+      cell.value = TextCellValue(employee['full_name'] ?? '');
+
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+      cell.value = DoubleCellValue(employee['salary'] ?? 0.0);
+      cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: currentRow));
+      cell.value = DoubleCellValue(employee['bonus'] ?? 0.0);
+      cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: currentRow));
+      double total = (employee['salary'] ?? 0.0) + (employee['bonus'] ?? 0.0);
+      cell.value = DoubleCellValue(total);
+      cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0 "FCFA"'));
+      currentRow++;
     }
   }
 
-  // Contenu Excel pour le rapport financier
-  void _addFinanceExcelContent(Sheet sheet, Map<String, dynamic> data) {
-    var row = 2;
-    
-    // Résumé financier
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Résumé Financier')
-      ..cellStyle = CellStyle(bold: true);
-    
-    row++;
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Revenus totaux');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-      ..value = DoubleCellValue(data['total_revenue']);
-    
-    row++;
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Dépenses totales');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-      ..value = DoubleCellValue(data['total_expenses']);
-    
-    row++;
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Bénéfice net');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-      ..value = DoubleCellValue(data['net_profit']);
+  void _addStockDataToExcel(Sheet sheet, Map<String, dynamic> data) {
+    int currentRow = 0;
+
+    // Add stock status header
+    var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('État du stock');
+    cell.cellStyle = CellStyle(bold: true);
+    currentRow++;
+
+    // Add stock status data
+    List<Map<String, dynamic>> stockStatus = List<Map<String, dynamic>>.from(data['stock_items'] ?? []);
+    for (var item in stockStatus) {
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+      cell.value = TextCellValue(item['name'] ?? '');
+
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+      cell.value = DoubleCellValue(item['quantity'] ?? 0.0);
+      cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0'));
+      currentRow++;
+    }
+    currentRow += 2;
+
+    // Add stock movements header
+    cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+    cell.value = TextCellValue('Mouvements de stock');
+    cell.cellStyle = CellStyle(bold: true);
+    currentRow++;
+
+    // Add stock movements data
+    List<Map<String, dynamic>> stockMovements = List<Map<String, dynamic>>.from(data['stock_movements'] ?? []);
+    for (var movement in stockMovements) {
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow));
+      cell.value = TextCellValue(movement['date'] ?? '');
+
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: currentRow));
+      cell.value = TextCellValue(movement['item_name'] ?? '');
+
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: currentRow));
+      cell.value = TextCellValue(movement['type'] ?? '');
+
+      cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: currentRow));
+      cell.value = DoubleCellValue(movement['quantity'] ?? 0.0);
+      cell.cellStyle = CellStyle(numberFormat: CustomNumericNumFormat(formatCode: '#,##0'));
+      currentRow++;
+    }
   }
 
-  // Contenu Excel pour le rapport des employés
-  void _addEmployeeExcelContent(Sheet sheet, Map<String, dynamic> data) {
-    var row = 2;
-    
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Rapport des Employés')
-      ..cellStyle = CellStyle(bold: true);
-    
-    row++;
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Total des salaires');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-      ..value = DoubleCellValue(data['salary_data']['total_salaries']);
-  }
-
-  // Contenu Excel pour le rapport des stocks
-  void _addStockExcelContent(Sheet sheet, Map<String, dynamic> data) {
-    var row = 2;
-    
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Rapport des Stocks')
-      ..cellStyle = CellStyle(bold: true);
-    
-    row++;
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Articles en stock faible');
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
-      ..value = IntCellValue((data['low_stock_items'] as List).length);
-  }
-
-  // Contenu Excel pour le rapport des cultures
-  void _addCropExcelContent(Sheet sheet, Map<String, dynamic> data) {
-    var row = 2;
-    
-    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
-      ..value = TextCellValue('Rapport des Cultures')
-      ..cellStyle = CellStyle(bold: true);
-    
-    // TODO: Implémenter le contenu du rapport des cultures
+  void _addCropDataToExcel(Sheet sheet, Map<String, dynamic> data) {
+    // TODO: Implémenter l'export des données des cultures
   }
 
   // Exporter un rapport

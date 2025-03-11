@@ -2,18 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart' as path_provider;
 import 'app/bindings/app_binding.dart';
 import 'app/core/theme/app_theme.dart';
 import 'app/routes/app_pages.dart';
 import 'app/core/controllers/theme_controller.dart';
+import 'app/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+
+  // Initialiser Supabase
   await Supabase.initialize(
     url: 'https://zfoqgivlbxtqosaupxoa.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpmb3FnaXZsYnh0cW9zYXVweG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE1NTM4ODYsImV4cCI6MjA1NzEyOTg4Nn0.TbzHaudhQMHQgSA1_JnKsBOBuxvkrPh5kOfpgb98V8I',
   );
+
+  // Initialiser les services
+  await Get.putAsync(() => AuthService().init());
+  Get.put(ThemeController());
+
+  // Ne pas initialiser path_provider sur le web
+  if (!kIsWeb) {
+    await path_provider.getApplicationDocumentsDirectory();
+  }
+
   runApp(const MyApp());
 }
 
@@ -22,17 +37,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = Get.put(ThemeController());
-    
-    return Obx(() => GetMaterialApp(
-      title: 'AgriGestion',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeController.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      initialBinding: AppBinding(),
-      initialRoute: AppPages.INITIAL,
-      getPages: AppPages.routes,
-    ));
+    return GetX<ThemeController>(
+      builder: (controller) => GetMaterialApp(
+        title: 'AgriGestion',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: controller.themeMode,
+        initialBinding: AppBinding(),
+        initialRoute: AppPages.INITIAL,
+        getPages: AppPages.routes,
+      ),
+    );
   }
 }
 
