@@ -26,6 +26,11 @@ import '../modules/report/bindings/report_binding.dart';
 import '../modules/report/views/report_view.dart';
 import '../modules/marketplace/bindings/marketplace_binding.dart';
 import '../modules/marketplace/views/marketplace_view.dart';
+import '../modules/marketplace/views/add_product_view.dart';
+import '../modules/marketplace/views/cart_view.dart';
+import '../modules/marketplace/views/orders_view.dart';
+import '../modules/marketplace/bindings/cart_binding.dart';
+import '../modules/marketplace/bindings/orders_binding.dart';
 
 part 'app_routes.dart';
 
@@ -122,6 +127,23 @@ class AppPages {
       name: _Paths.MARKETPLACE,
       page: () => const MarketplaceView(),
       binding: MarketplaceBinding(),
+      children: [
+        GetPage(
+          name: _Paths.ADD_PRODUCT,
+          page: () => const AddProductView(),
+          binding: MarketplaceBinding(),
+        ),
+        GetPage(
+          name: _Paths.CART,
+          page: () => const CartView(),
+          binding: MarketplaceBinding(),
+        ),
+        GetPage(
+          name: _Paths.ORDERS,
+          page: () => const OrdersView(),
+          binding: MarketplaceBinding(),
+        ),
+      ],
     ),
   ];
 } 

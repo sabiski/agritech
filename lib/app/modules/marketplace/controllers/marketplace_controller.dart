@@ -1,10 +1,12 @@
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../data/models/product_model.dart';
-import '../../../data/models/cart_model.dart';
-import '../../../data/models/order_model.dart';
-import '../../../core/utils/helpers.dart';
 import 'package:flutter/material.dart';
+import '../models/product_model.dart';
+import '../models/cart_model.dart';
+import '../models/cart_item_model.dart';
+import '../models/order_model.dart';
+import '../models/order_item_model.dart';
+import '../../../core/utils/helpers.dart';
 
 class MarketplaceController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -15,8 +17,8 @@ class MarketplaceController extends GetxController {
   final Rx<CartModel> cart = CartModel().obs;
   final RxBool isLoading = false.obs;
   final RxString searchQuery = ''.obs;
-  final RxString selectedCategory = 'Tous'.obs;
-  final RxString selectedType = 'Tous'.obs;
+  final Rx<ProductCategory?> selectedCategory = Rx<ProductCategory?>(null);
+  final Rx<ProductType?> selectedType = Rx<ProductType?>(null);
   final RxString error = ''.obs;
   
   // Filtres observables
@@ -24,6 +26,9 @@ class MarketplaceController extends GetxController {
   final RxList<String> types = <String>['Tous', 'Produits agricoles', 'Intrants'].obs;
 
   String? get currentUserId => _supabase.auth.currentUser?.id;
+
+  // Getter pour les éléments du panier
+  List<CartItemModel> get cartItems => cart.value.items;
 
   @override
   void onInit() {
@@ -84,11 +89,7 @@ class MarketplaceController extends GetxController {
       products.value = productsList;
       
       // Mettre à jour les catégories disponibles
-      final uniqueCategories = productsList
-          .map((product) => product.category)
-          .toSet()
-          .toList();
-      categories.value = ['Tous', ...uniqueCategories];
+      _updateCategories();
       
     } catch (e) {
       print('Error fetching products: $e');
@@ -197,7 +198,7 @@ class MarketplaceController extends GetxController {
     }
   }
 
-  // Ajouter au panier
+  // Ajouter au panier avec quantité spécifique
   Future<void> addToCart(ProductModel product, double quantity) async {
     try {
       final cartItem = CartItemModel(
@@ -220,6 +221,36 @@ class MarketplaceController extends GetxController {
     }
   }
 
+  // Ajouter au panier avec quantité par défaut de 1
+  void addProductToCart(ProductModel product) {
+    final existingItem = cart.value.items.firstWhereOrNull(
+      (item) => item.productId == product.id,
+    );
+
+    if (existingItem != null) {
+      final index = cart.value.items.indexOf(existingItem);
+      cart.value.items[index] = CartItemModel(
+        productId: existingItem.productId,
+        productName: existingItem.productName,
+        quantity: existingItem.quantity + 1,
+        unit: existingItem.unit,
+        unitPrice: existingItem.unitPrice,
+        sellerId: existingItem.sellerId,
+        imageUrl: existingItem.imageUrl,
+      );
+    } else {
+      cart.value.addItem(CartItemModel(
+        productId: product.id,
+        productName: product.name,
+        quantity: 1,
+        unit: product.unit,
+        unitPrice: product.price,
+        sellerId: product.sellerId,
+        imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls[0] : null,
+      ));
+    }
+  }
+
   // Mettre à jour le panier dans la base de données
   Future<void> _updateCartInDatabase() async {
     try {
@@ -232,7 +263,7 @@ class MarketplaceController extends GetxController {
     }
   }
 
-  // Passer une commande
+  // Passer une commande avec adresse et méthode de paiement
   Future<void> placeOrder({
     required String shippingAddress,
     required String paymentMethod,
@@ -252,19 +283,23 @@ class MarketplaceController extends GetxController {
       for (final entry in itemsBySeller.entries) {
         final sellerId = entry.key;
         final items = entry.value;
+        final orderId = DateTime.now().millisecondsSinceEpoch.toString();
         
         final order = OrderModel(
-          buyerId: currentUserId!,
+          id: orderId,
+          userId: currentUserId!,
           sellerId: sellerId,
           items: items.map((item) => OrderItemModel(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
             productId: item.productId,
             productName: item.productName,
-            quantity: item.quantity.toDouble(),
+            quantity: item.quantity,
             unit: item.unit,
             unitPrice: item.unitPrice,
           )).toList(),
           status: OrderStatus.pending,
-          totalAmount: items.fold(0, (sum, item) => sum + item.totalPrice),
+          createdAt: DateTime.now(),
+          total: items.fold(0, (sum, item) => sum + item.totalPrice),
           shippingAddress: shippingAddress,
           paymentMethod: paymentMethod,
           paymentStatus: 'pending',
@@ -287,6 +322,76 @@ class MarketplaceController extends GetxController {
       print('Error placing order: $e');
       error.value = 'Erreur lors de la commande: ${e.toString()}';
       showErrorSnackbar('Erreur', 'Impossible de passer la commande');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Passer une commande simple
+  Future<void> submitOrder() async {
+    try {
+      isLoading.value = true;
+      error.value = '';
+
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        error.value = 'Utilisateur non connecté';
+        return;
+      }
+
+      if (cart.value.items.isEmpty) {
+        error.value = 'Le panier est vide';
+        return;
+      }
+
+      final orderId = DateTime.now().millisecondsSinceEpoch.toString();
+      
+      // Create order
+      await _supabase.from('orders').insert({
+        'id': orderId,
+        'user_id': userId,
+        'status': 'en attente',
+        'total': cartTotal,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      // Create order items
+      final orderItems = cart.value.items.map((item) {
+        return {
+          'id': DateTime.now().millisecondsSinceEpoch.toString(),
+          'order_id': orderId,
+          'product_id': item.productId,
+          'quantity': item.quantity,
+          'price': item.unitPrice,
+        };
+      }).toList();
+
+      await _supabase.from('order_items').insert(orderItems);
+
+      // Clear cart
+      cart.value.clear();
+
+      // Refresh orders
+      await fetchOrders();
+
+      Get.snackbar(
+        'Succès',
+        'Votre commande a été placée avec succès',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      error.value = 'Erreur lors de la création de la commande';
+      print('Error placing order: $e');
+
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue lors de la création de la commande',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -320,10 +425,8 @@ class MarketplaceController extends GetxController {
     return products.where((product) {
       final matchesSearch = product.name.toLowerCase().contains(searchQuery.value.toLowerCase()) ||
                           product.description.toLowerCase().contains(searchQuery.value.toLowerCase());
-      final matchesCategory = selectedCategory.value == 'Tous' || product.category == selectedCategory.value;
-      final matchesType = selectedType.value == 'Tous' ||
-                         (selectedType.value == 'Produits agricoles' && product.type == ProductType.agricultural) ||
-                         (selectedType.value == 'Intrants' && product.type == ProductType.input);
+      final matchesCategory = selectedCategory.value == null || product.category == selectedCategory.value;
+      final matchesType = selectedType.value == null || product.type == selectedType.value;
       return matchesSearch && matchesCategory && matchesType;
     }).toList();
   }
@@ -362,5 +465,59 @@ class MarketplaceController extends GetxController {
       );
       print('Error updating cart in database: $e');
     }
+  }
+
+  void setCategory(ProductCategory? category) {
+    selectedCategory.value = category;
+  }
+
+  void setType(ProductType? type) {
+    selectedType.value = type;
+  }
+
+  void setSearchQuery(String query) {
+    searchQuery.value = query;
+  }
+
+  void resetFilters() {
+    selectedCategory.value = null;
+    selectedType.value = null;
+    searchQuery.value = '';
+  }
+
+  void removeFromCart(String productId) {
+    cart.value.items.removeWhere((item) => item.productId == productId);
+  }
+
+  void updateCartItemQuantity(String productId, int quantity) {
+    final index = cart.value.items.indexWhere((item) => item.productId == productId);
+    if (index != -1) {
+      if (quantity <= 0) {
+        cart.value.items.removeAt(index);
+      } else {
+        cart.value.items[index] = CartItemModel(
+          productId: cart.value.items[index].productId,
+          productName: cart.value.items[index].productName,
+          quantity: quantity,
+          unit: cart.value.items[index].unit,
+          unitPrice: cart.value.items[index].unitPrice,
+          sellerId: cart.value.items[index].sellerId,
+          imageUrl: cart.value.items[index].imageUrl,
+        );
+      }
+    }
+  }
+
+  double get cartTotal {
+    return cart.value.items.fold(0, (sum, item) => sum + item.totalPrice);
+  }
+
+  // Mettre à jour les catégories disponibles
+  void _updateCategories() {
+    final uniqueCategories = products
+        .map((product) => product.category.value)
+        .toSet()
+        .toList();
+    categories.value = ['Tous', ...uniqueCategories];
   }
 } 
