@@ -35,13 +35,20 @@ enum ProductCategory {
   cereals('Céréales'),
   tubers('Tubercules'),
   fertilizers('Engrais'),
-  seeds('Semences'),
   pesticides('Pesticides'),
+  seeds('Semences'),
   tools('Outils'),
   other('Autre');
 
   final String value;
   const ProductCategory(this.value);
+
+  static ProductCategory fromString(String value) {
+    return ProductCategory.values.firstWhere(
+      (category) => category.value == value,
+      orElse: () => ProductCategory.other,
+    );
+  }
 }
 
 class ProductModel {
@@ -51,14 +58,12 @@ class ProductModel {
   final double price;
   final String unit;
   final int quantity;
-  final List<String> imageUrls;
-  final String location;
   final String sellerId;
+  final List<String> imageUrls;
   final ProductStatus status;
   final ProductType type;
   final ProductCategory category;
   final DateTime createdAt;
-  final bool isPromoted;
 
   ProductModel({
     required this.id,
@@ -67,14 +72,12 @@ class ProductModel {
     required this.price,
     required this.unit,
     required this.quantity,
-    required this.imageUrls,
-    required this.location,
     required this.sellerId,
+    required this.imageUrls,
     required this.status,
     required this.type,
     required this.category,
     required this.createdAt,
-    this.isPromoted = false,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -85,17 +88,12 @@ class ProductModel {
       price: (json['price'] as num).toDouble(),
       unit: json['unit'] as String,
       quantity: json['quantity'] as int,
-      imageUrls: (json['image_urls'] as List<dynamic>).cast<String>(),
-      location: json['location'] as String,
       sellerId: json['seller_id'] as String,
+      imageUrls: (json['image_urls'] as List<dynamic>).map((e) => e as String).toList(),
       status: ProductStatus.fromString(json['status'] as String),
       type: ProductType.fromString(json['type'] as String),
-      category: ProductCategory.values.firstWhere(
-        (category) => category.value == json['category'],
-        orElse: () => ProductCategory.other,
-      ),
+      category: ProductCategory.fromString(json['category'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
-      isPromoted: json['is_promoted'] as bool? ?? false,
     );
   }
 
@@ -107,14 +105,12 @@ class ProductModel {
       'price': price,
       'unit': unit,
       'quantity': quantity,
-      'image_urls': imageUrls,
-      'location': location,
       'seller_id': sellerId,
+      'image_urls': imageUrls,
       'status': status.value,
       'type': type.value,
       'category': category.value,
       'created_at': createdAt.toIso8601String(),
-      'is_promoted': isPromoted,
     };
   }
 } 

@@ -1,43 +1,39 @@
 import 'product_model.dart';
 
 class OrderItemModel {
-  final String id;
   final String productId;
   final String productName;
+  final double price;
   final int quantity;
-  final String unit;
-  final double unitPrice;
+  final String? imageUrl;
 
   OrderItemModel({
-    required this.id,
     required this.productId,
     required this.productName,
+    required this.price,
     required this.quantity,
-    required this.unit,
-    required this.unitPrice,
+    this.imageUrl,
   });
 
-  double get totalPrice => quantity * unitPrice;
+  double get total => price * quantity;
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'product_id': productId,
-      'product_name': productName,
+      'productId': productId,
+      'productName': productName,
+      'price': price,
       'quantity': quantity,
-      'unit': unit,
-      'unit_price': unitPrice,
+      'imageUrl': imageUrl,
     };
   }
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
-      id: json['id'] as String,
-      productId: json['product_id'] as String,
-      productName: json['product_name'] as String,
+      productId: json['productId'] as String,
+      productName: json['productName'] as String,
+      price: (json['price'] as num).toDouble(),
       quantity: json['quantity'] as int,
-      unit: json['unit'] as String,
-      unitPrice: (json['unit_price'] as num).toDouble(),
+      imageUrl: json['imageUrl'] as String?,
     );
   }
 } 

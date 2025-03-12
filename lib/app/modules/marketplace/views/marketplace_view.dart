@@ -279,11 +279,7 @@ class MarketplaceView extends GetView<MarketplaceController> {
                             controller.selectedCategory.value != 'Tous' ||
                             controller.selectedType.value != 'Tous')
                           TextButton(
-                            onPressed: () {
-                              controller.searchQuery.value = '';
-                              controller.selectedCategory.value = 'Tous';
-                              controller.selectedType.value = 'Tous';
-                            },
+                            onPressed: _resetFilters,
                             child: const Text('Réinitialiser les filtres'),
                           ),
                       ],
@@ -369,6 +365,13 @@ class MarketplaceView extends GetView<MarketplaceController> {
     );
   }
 
+  // Réinitialiser les filtres
+  void _resetFilters() {
+    controller.searchQuery.value = '';
+    controller.setCategory('Tous');
+    controller.setType('Tous');
+  }
+
   Widget _buildCategoryCard(String title, IconData icon, Color color) {
     return Card(
       margin: const EdgeInsets.only(right: 12),
@@ -376,9 +379,7 @@ class MarketplaceView extends GetView<MarketplaceController> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {
-          controller.selectedCategory.value = title;
-        },
+        onTap: () => controller.setCategory(title),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 100,
@@ -413,7 +414,11 @@ class MarketplaceView extends GetView<MarketplaceController> {
         selected: isSelected,
         label: Text(label),
         onSelected: (selected) {
-          // TODO: Appliquer le filtre
+          if (label == 'Tous') {
+            _resetFilters();
+          } else if (label == 'Produits agricoles' || label == 'Intrants') {
+            controller.setType(label);
+          }
         },
         selectedColor: AppTheme.primaryGreen.withOpacity(0.2),
         checkmarkColor: AppTheme.primaryGreen,

@@ -99,7 +99,7 @@ class _OnboardingViewState extends State<OnboardingView> {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: _isDarkMode ? AppTheme.darkTheme : AppThem.,
+      data: _isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
       child: Builder(
         builder: (context) => Scaffold(
           body: SafeArea(

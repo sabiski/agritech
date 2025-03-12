@@ -467,12 +467,26 @@ class MarketplaceController extends GetxController {
     }
   }
 
-  void setCategory(ProductCategory? category) {
-    selectedCategory.value = category;
+  void setCategory(String categoryValue) {
+    if (categoryValue == 'Tous') {
+      selectedCategory.value = null;
+    } else {
+      selectedCategory.value = ProductCategory.values.firstWhere(
+        (cat) => cat.value == categoryValue,
+        orElse: () => ProductCategory.other,
+      );
+    }
   }
 
-  void setType(ProductType? type) {
-    selectedType.value = type;
+  void setType(String typeValue) {
+    if (typeValue == 'Tous') {
+      selectedType.value = null;
+    } else {
+      selectedType.value = ProductType.values.firstWhere(
+        (type) => type.value == typeValue,
+        orElse: () => ProductType.agricultural,
+      );
+    }
   }
 
   void setSearchQuery(String query) {
@@ -515,9 +529,9 @@ class MarketplaceController extends GetxController {
   // Mettre à jour les catégories disponibles
   void _updateCategories() {
     final uniqueCategories = products
-        .map((product) => product.category.value)
+        .map((product) => product.category)
         .toSet()
         .toList();
-    categories.value = ['Tous', ...uniqueCategories];
+    categories.value = ['Tous', ...uniqueCategories.map((cat) => cat.value)];
   }
 } 

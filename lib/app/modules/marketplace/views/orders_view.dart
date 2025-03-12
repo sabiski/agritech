@@ -134,7 +134,7 @@ class OrdersView extends GetView<MarketplaceController> {
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(8),
                                         image: DecorationImage(
-                                          image: NetworkImage(item.product.imageUrl),
+                                          image: NetworkImage(item.imageUrl),
                                           fit: BoxFit.cover,
                                         ),
                                       ),
@@ -145,13 +145,13 @@ class OrdersView extends GetView<MarketplaceController> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            item.product.name,
+                                            item.productName,
                                             style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           Text(
-                                            '${item.quantity}x ${item.product.price} FCFA',
+                                            '${item.quantity}x ${item.price} FCFA',
                                             style: GoogleFonts.poppins(
                                               color: Colors.grey[600],
                                               fontSize: 14,
@@ -161,7 +161,7 @@ class OrdersView extends GetView<MarketplaceController> {
                                       ),
                                     ),
                                     Text(
-                                      '${item.quantity * item.product.price} FCFA',
+                                      '${item.quantity * item.price} FCFA',
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -204,37 +204,37 @@ class OrdersView extends GetView<MarketplaceController> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'en attente':
+  Color _getStatusColor(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
         return Colors.orange;
-      case 'confirmée':
+      case OrderStatus.confirmed:
         return Colors.blue;
-      case 'en cours':
+      case OrderStatus.inProgress:
         return Colors.green;
-      case 'livrée':
+      case OrderStatus.delivered:
         return AppTheme.primary;
-      case 'annulée':
+      case OrderStatus.cancelled:
         return Colors.red;
       default:
         return Colors.grey;
     }
   }
 
-  String _getStatusText(String status) {
-    switch (status.toLowerCase()) {
-      case 'en attente':
+  String _getStatusText(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
         return 'En attente';
-      case 'confirmée':
+      case OrderStatus.confirmed:
         return 'Confirmée';
-      case 'en cours':
+      case OrderStatus.inProgress:
         return 'En cours';
-      case 'livrée':
+      case OrderStatus.delivered:
         return 'Livrée';
-      case 'annulée':
+      case OrderStatus.cancelled:
         return 'Annulée';
       default:
-        return status;
+        return status.toString();
     }
   }
 } 
