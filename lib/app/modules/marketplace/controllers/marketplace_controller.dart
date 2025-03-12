@@ -7,6 +7,7 @@ import '../models/cart_item_model.dart';
 import '../models/order_model.dart';
 import '../models/order_item_model.dart';
 import '../../../core/utils/helpers.dart';
+import 'dart:io';
 
 class MarketplaceController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -533,5 +534,24 @@ class MarketplaceController extends GetxController {
         .toSet()
         .toList();
     categories.value = ['Tous', ...uniqueCategories.map((cat) => cat.value)];
+  }
+
+  // Upload d'une image de produit
+  Future<String> uploadProductImage(File imageFile) async {
+    try {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+      final storageResponse = await _supabase.storage
+          .from('product_images')
+          .upload(fileName, imageFile);
+      
+      final imageUrl = _supabase.storage
+          .from('product_images')
+          .getPublicUrl(fileName);
+      
+      return imageUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      throw Exception('Failed to upload image');
+    }
   }
 } 

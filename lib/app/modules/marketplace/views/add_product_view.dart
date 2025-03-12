@@ -1,11 +1,26 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../controllers/marketplace_controller.dart';
+import '../models/product_model.dart';
 import '../../../core/theme/app_theme.dart';
 
 class AddProductView extends GetView<MarketplaceController> {
-  const AddProductView({super.key});
+  AddProductView({Key? key}) : super(key: key);
+
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _quantityController = TextEditingController();
+  final _unitController = TextEditingController();
+  final _selectedImages = <File>[].obs;
+  final _isPromotion = false.obs;
+  final _promoPrice = TextEditingController();
+  final _selectedCategory = Rx<ProductCategory?>(null);
+  final _selectedType = Rx<ProductType?>(null);
 
   @override
   Widget build(BuildContext context) {
@@ -14,288 +29,414 @@ class AddProductView extends GetView<MarketplaceController> {
         title: Text(
           'Ajouter un produit',
           style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Get.back(),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section photos
-            _buildSectionTitle('Photos du produit'),
-            const SizedBox(height: 16),
-            _buildImagePicker(),
-            const SizedBox(height: 24),
-
-            // Informations de base
-            _buildSectionTitle('Informations de base'),
-            const SizedBox(height: 16),
-            TextFormField(
-              decoration: _inputDecoration(
-                'Nom du produit',
-                'Ex: Tomates fraîches',
-                Icons.shopping_bag_outlined,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Images Section
+              Text(
+                'Images du produit',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              maxLines: 3,
-              decoration: _inputDecoration(
-                'Description',
-                'Décrivez votre produit en détail',
-                Icons.description_outlined,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    keyboardType: TextInputType.number,
-                    decoration: _inputDecoration(
-                      'Prix',
-                      'Ex: 1000',
-                      Icons.attach_money,
-                      suffix: 'FCFA',
+              const SizedBox(height: 8),
+              Obx(() => _selectedImages.isEmpty
+                ? _buildAddImageButton()
+                : SizedBox(
+                    height: 120,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _selectedImages.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == _selectedImages.length) {
+                          return _buildAddImageButton();
+                        }
+                        return _buildImagePreview(_selectedImages[index], index);
+                      },
                     ),
                   ),
+              ),
+              const SizedBox(height: 24),
+
+              // Informations de base
+              Text(
+                'Informations de base',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    decoration: _inputDecoration(
-                      'Unité',
-                      'Ex: kg',
-                      Icons.scale_outlined,
+              ),
+              const SizedBox(height: 16),
+              
+              // Catégorie et Type
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<ProductCategory>(
+                      decoration: const InputDecoration(
+                        labelText: 'Catégorie',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _selectedCategory.value,
+                      items: ProductCategory.values.map((category) {
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Text(category.value),
+                        );
+                      }).toList(),
+                      onChanged: (value) => _selectedCategory.value = value,
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Veuillez sélectionner une catégorie';
+                        }
+                        return null;
+                      },
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Catégorisation
-            _buildSectionTitle('Catégorisation'),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: _inputDecoration(
-                'Type de produit',
-                null,
-                Icons.category_outlined,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButtonFormField<ProductType>(
+                      decoration: const InputDecoration(
+                        labelText: 'Type',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _selectedType.value,
+                      items: ProductType.values.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(type.value),
+                        );
+                      }).toList(),
+                      onChanged: (value) => _selectedType.value = value,
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Veuillez sélectionner un type';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
               ),
-              items: const [
-                DropdownMenuItem(
-                  value: 'agricultural',
-                  child: Text('Produit agricole'),
-                ),
-                DropdownMenuItem(
-                  value: 'input',
-                  child: Text('Intrant'),
-                ),
-              ],
-              onChanged: (value) {
-                // TODO: Gérer le changement
-              },
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: _inputDecoration(
-                'Catégorie',
-                null,
-                Icons.grid_view_outlined,
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: 'vegetables',
-                  child: Text('Légumes'),
-                ),
-                DropdownMenuItem(
-                  value: 'fruits',
-                  child: Text('Fruits'),
-                ),
-                DropdownMenuItem(
-                  value: 'cereals',
-                  child: Text('Céréales'),
-                ),
-                DropdownMenuItem(
-                  value: 'tools',
-                  child: Text('Outils'),
-                ),
-                DropdownMenuItem(
-                  value: 'fertilizers',
-                  child: Text('Engrais'),
-                ),
-              ],
-              onChanged: (value) {
-                // TODO: Gérer le changement
-              },
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-            // Stock et disponibilité
-            _buildSectionTitle('Stock et disponibilité'),
-            const SizedBox(height: 16),
-            TextFormField(
-              keyboardType: TextInputType.number,
-              decoration: _inputDecoration(
-                'Quantité disponible',
-                'Ex: 100',
-                Icons.inventory_2_outlined,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Produit en promotion'),
-              subtitle: const Text('Mettre en avant dans les résultats de recherche'),
-              value: false,
-              onChanged: (bool value) {
-                // TODO: Gérer le changement
-              },
-              activeColor: AppTheme.primaryGreen,
-            ),
-            const SizedBox(height: 24),
-
-            // Localisation
-            _buildSectionTitle('Localisation'),
-            const SizedBox(height: 16),
-            TextFormField(
-              decoration: _inputDecoration(
-                'Lieu de retrait',
-                'Ex: Libreville, Quartier Louis',
-                Icons.location_on_outlined,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Bouton de publication
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Gérer la publication
+              // Nom et Description
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nom du produit',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Veuillez entrer un nom';
+                  }
+                  return null;
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryGreen,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
                 ),
-                child: Text(
-                  'Publier l\'annonce',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Veuillez entrer une description';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Prix et Quantité
+              Text(
+                'Prix et stock',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Prix',
+                        suffixText: 'FCFA',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un prix';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'Prix invalide';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _quantityController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Quantité disponible',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer une quantité';
+                        }
+                        if (int.tryParse(value) == null) {
+                          return 'Quantité invalide';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _unitController,
+                decoration: const InputDecoration(
+                  labelText: 'Unité (kg, sac, etc.)',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Veuillez entrer une unité';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Promotion
+              Text(
+                'Promotion',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Obx(() => SwitchListTile(
+                title: const Text('Mettre en promotion'),
+                value: _isPromotion.value,
+                onChanged: (bool value) {
+                  _isPromotion.value = value;
+                },
+                activeColor: AppTheme.primary,
+              )),
+              Obx(() => _isPromotion.value
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: TextFormField(
+                      controller: _promoPrice,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Prix promotionnel',
+                        suffixText: 'FCFA',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (_isPromotion.value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un prix promotionnel';
+                          }
+                          final promoPrice = double.tryParse(value);
+                          final originalPrice = double.tryParse(_priceController.text);
+                          if (promoPrice == null) {
+                            return 'Prix invalide';
+                          }
+                          if (originalPrice != null && promoPrice >= originalPrice) {
+                            return 'Le prix promotionnel doit être inférieur au prix original';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                  )
+                : const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 32),
+
+              // Bouton de publication
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _publishProduct,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Publier l\'annonce',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddImageButton() {
+    return InkWell(
+      onTap: _pickImage,
+      child: Container(
+        width: 100,
+        height: 100,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_photo_alternate_outlined, size: 32),
+            SizedBox(height: 4),
+            Text('Ajouter\nune image'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration(
-    String label,
-    String? hint,
-    IconData icon, {
-    String? suffix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      suffixText: suffix,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
-  Widget _buildImagePicker() {
-    return Container(
-      height: 120,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.3),
-          style: BorderStyle.solid,
-        ),
-      ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.all(8),
-        itemCount: 5, // Maximum 5 photos
-        itemBuilder: (context, index) {
-          // Si c'est le premier élément et qu'il n'y a pas de photo
-          if (index == 0) {
-            return Container(
-              width: 100,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.grey.withOpacity(0.3),
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: InkWell(
-                onTap: () {
-                  // TODO: Ouvrir le sélecteur d'images
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.add_photo_alternate_outlined,
-                      color: Colors.grey[600],
-                      size: 32,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ajouter',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          // Pour les emplacements de photos supplémentaires
-          return Container(
-            width: 100,
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.grey.withOpacity(0.3),
-                style: BorderStyle.solid,
-              ),
+  Widget _buildImagePreview(File image, int index) {
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            image: DecorationImage(
+              image: FileImage(image),
+              fit: BoxFit.cover,
             ),
-          );
-        },
-      ),
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 12,
+          child: InkWell(
+            onTap: () => _removeImage(index),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 16),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (pickedFile != null) {
+      _selectedImages.add(File(pickedFile.path));
+    }
+  }
+
+  void _removeImage(int index) {
+    _selectedImages.removeAt(index);
+  }
+
+  Future<void> _publishProduct() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedImages.isEmpty) {
+      Get.snackbar(
+        'Erreur',
+        'Veuillez ajouter au moins une image',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      final product = ProductModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _nameController.text,
+        description: _descriptionController.text,
+        price: double.parse(_priceController.text),
+        promoPrice: _isPromotion.value ? double.parse(_promoPrice.text) : null,
+        quantity: int.parse(_quantityController.text),
+        unit: _unitController.text,
+        category: _selectedCategory.value!,
+        type: _selectedType.value!,
+        status: ProductStatus.available,
+        sellerId: controller.currentUserId!,
+        imageUrls: [], // Will be updated after image upload
+        createdAt: DateTime.now(),
+      );
+
+      // Upload images and get URLs
+      final imageUrls = await Future.wait(
+        _selectedImages.map((file) => controller.uploadProductImage(file))
+      );
+
+      // Update product with image URLs
+      final updatedProduct = product.copyWith(imageUrls: imageUrls);
+
+      // Add product to database
+      await controller.addProduct(updatedProduct);
+
+      Get.back();
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue lors de la publication',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      print('Error publishing product: $e');
+    }
   }
 } 

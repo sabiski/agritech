@@ -1,7 +1,7 @@
 enum ProductStatus {
-  available('disponible'),
-  outOfStock('rupture de stock'),
-  discontinued('discontinué');
+  available('Disponible'),
+  outOfStock('Rupture de stock'),
+  discontinued('Arrêté');
 
   final String value;
   const ProductStatus(this.value);
@@ -15,8 +15,8 @@ enum ProductStatus {
 }
 
 enum ProductType {
-  agricultural('Produits agricoles'),
-  input('Intrants');
+  agricultural('Produit agricole'),
+  input('Intrant');
 
   final String value;
   const ProductType(this.value);
@@ -56,13 +56,14 @@ class ProductModel {
   final String name;
   final String description;
   final double price;
-  final String unit;
+  final double? promoPrice;
   final int quantity;
+  final String unit;
+  final ProductCategory category;
+  final ProductType type;
+  final ProductStatus status;
   final String sellerId;
   final List<String> imageUrls;
-  final ProductStatus status;
-  final ProductType type;
-  final ProductCategory category;
   final DateTime createdAt;
 
   ProductModel({
@@ -70,32 +71,16 @@ class ProductModel {
     required this.name,
     required this.description,
     required this.price,
-    required this.unit,
+    this.promoPrice,
     required this.quantity,
+    required this.unit,
+    required this.category,
+    required this.type,
+    required this.status,
     required this.sellerId,
     required this.imageUrls,
-    required this.status,
-    required this.type,
-    required this.category,
     required this.createdAt,
   });
-
-  factory ProductModel.fromJson(Map<String, dynamic> json) {
-    return ProductModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      price: (json['price'] as num).toDouble(),
-      unit: json['unit'] as String,
-      quantity: json['quantity'] as int,
-      sellerId: json['seller_id'] as String,
-      imageUrls: (json['image_urls'] as List<dynamic>).map((e) => e as String).toList(),
-      status: ProductStatus.fromString(json['status'] as String),
-      type: ProductType.fromString(json['type'] as String),
-      category: ProductCategory.fromString(json['category'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-    );
-  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -103,14 +88,74 @@ class ProductModel {
       'name': name,
       'description': description,
       'price': price,
-      'unit': unit,
+      'promo_price': promoPrice,
       'quantity': quantity,
+      'unit': unit,
+      'category': category.toString().split('.').last,
+      'type': type.toString().split('.').last,
+      'status': status.toString().split('.').last,
       'seller_id': sellerId,
       'image_urls': imageUrls,
-      'status': status.value,
-      'type': type.value,
-      'category': category.value,
       'created_at': createdAt.toIso8601String(),
     };
+  }
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      price: (json['price'] as num).toDouble(),
+      promoPrice: json['promo_price'] != null ? (json['promo_price'] as num).toDouble() : null,
+      quantity: json['quantity'] as int,
+      unit: json['unit'] as String,
+      category: ProductCategory.values.firstWhere(
+        (e) => e.toString().split('.').last == json['category'],
+        orElse: () => ProductCategory.other,
+      ),
+      type: ProductType.values.firstWhere(
+        (e) => e.toString().split('.').last == json['type'],
+        orElse: () => ProductType.agricultural,
+      ),
+      status: ProductStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == json['status'],
+        orElse: () => ProductStatus.available,
+      ),
+      sellerId: json['seller_id'] as String,
+      imageUrls: (json['image_urls'] as List<dynamic>).map((e) => e as String).toList(),
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+
+  ProductModel copyWith({
+    String? id,
+    String? name,
+    String? description,
+    double? price,
+    double? promoPrice,
+    int? quantity,
+    String? unit,
+    ProductCategory? category,
+    ProductType? type,
+    ProductStatus? status,
+    String? sellerId,
+    List<String>? imageUrls,
+    DateTime? createdAt,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      promoPrice: promoPrice ?? this.promoPrice,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      category: category ?? this.category,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      sellerId: sellerId ?? this.sellerId,
+      imageUrls: imageUrls ?? this.imageUrls,
+      createdAt: createdAt ?? this.createdAt,
+    );
   }
 } 

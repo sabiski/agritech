@@ -130,7 +130,7 @@ class AppPages {
       children: [
         GetPage(
           name: _Paths.ADD_PRODUCT,
-          page: () => const AddProductView(),
+          page: () =>  AddProductView(),
           binding: MarketplaceBinding(),
         ),
         GetPage(
