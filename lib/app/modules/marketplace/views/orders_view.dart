@@ -134,7 +134,7 @@ class OrdersView extends GetView<MarketplaceController> {
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(8),
                                         image: DecorationImage(
-                                          image: NetworkImage(item.imageUrl),
+                                          image: NetworkImage(item.imageUrl ?? ''),
                                           fit: BoxFit.cover,
                                         ),
                                       ),

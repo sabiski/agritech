@@ -290,12 +290,12 @@ class MarketplaceController extends GetxController {
           userId: currentUserId!,
           sellerId: sellerId,
           items: items.map((item) => OrderItemModel(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            imageUrl: item.imageUrl,
             productId: item.productId,
             productName: item.productName,
             quantity: item.quantity,
-            unit: item.unit,
-            unitPrice: item.unitPrice,
+        
+            price: item.unitPrice,
           )).toList(),
           status: OrderStatus.pending,
           createdAt: DateTime.now(),
