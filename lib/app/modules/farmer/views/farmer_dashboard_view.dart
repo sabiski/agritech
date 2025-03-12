@@ -197,14 +197,8 @@ class _FarmerDashboardViewState extends State<FarmerDashboardView> {
               ],
             ),
             onTap: () {
-              // TODO: Vérifier si l'utilisateur est premium
-              Get.snackbar(
-                'Fonctionnalité Premium',
-                'Cette fonctionnalité est réservée aux utilisateurs premium.',
-                backgroundColor: Colors.amber,
-                colorText: Colors.black87,
-              );
               Navigator.pop(context);
+              Get.toNamed('/marketplace');
             },
           ),
           ListTile(

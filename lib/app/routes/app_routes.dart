@@ -20,6 +20,7 @@ abstract class Routes {
   static const EMPLOYEE = _Paths.EMPLOYEE;
   static const EMPLOYEE_DETAIL = _Paths.EMPLOYEE_DETAIL;
   static const REPORT = _Paths.REPORT;
+  static const MARKETPLACE = _Paths.MARKETPLACE;
 }
 
 abstract class _Paths {
@@ -40,4 +41,5 @@ abstract class _Paths {
   static const EMPLOYEE = '/employee';
   static const EMPLOYEE_DETAIL = '/employee/detail';
   static const REPORT = '/report';
+  static const MARKETPLACE = '/marketplace';
 } 

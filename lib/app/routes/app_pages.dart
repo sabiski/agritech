@@ -24,6 +24,8 @@ import '../modules/employee/bindings/employee_binding.dart';
 import '../modules/employee/views/employee_view.dart';
 import '../modules/report/bindings/report_binding.dart';
 import '../modules/report/views/report_view.dart';
+import '../modules/marketplace/bindings/marketplace_binding.dart';
+import '../modules/marketplace/views/marketplace_view.dart';
 
 part 'app_routes.dart';
 
@@ -115,6 +117,11 @@ class AppPages {
       name: _Paths.REPORT,
       page: () => const ReportView(),
       binding: ReportBinding(),
+    ),
+    GetPage(
+      name: _Paths.MARKETPLACE,
+      page: () => const MarketplaceView(),
+      binding: MarketplaceBinding(),
     ),
   ];
 } 
