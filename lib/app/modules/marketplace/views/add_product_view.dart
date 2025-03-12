@@ -85,54 +85,69 @@ class AddProductView extends GetView<MarketplaceController> {
               const SizedBox(height: 16),
               
               // Catégorie et Type
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<ProductCategory>(
-                      decoration: const InputDecoration(
-                        labelText: 'Catégorie',
-                        border: OutlineInputBorder(),
+              LayoutBuilder(
+                builder: (context, constraints) => Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    SizedBox(
+                      width: constraints.maxWidth > 600 
+                        ? (constraints.maxWidth - 32) / 2 
+                        : constraints.maxWidth,
+                      child: DropdownButtonFormField<ProductCategory>(
+                        decoration: const InputDecoration(
+                          labelText: 'Catégorie',
+                          border: OutlineInputBorder(),
+                        ),
+                        value: _selectedCategory.value,
+                        items: ProductCategory.values.map((category) {
+                          return DropdownMenuItem(
+                            value: category,
+                            child: Text(
+                              category.value,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) => _selectedCategory.value = value,
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Veuillez sélectionner une catégorie';
+                          }
+                          return null;
+                        },
                       ),
-                      value: _selectedCategory.value,
-                      items: ProductCategory.values.map((category) {
-                        return DropdownMenuItem(
-                          value: category,
-                          child: Text(category.value),
-                        );
-                      }).toList(),
-                      onChanged: (value) => _selectedCategory.value = value,
-                      validator: (value) {
-                        if (value == null) {
-                          return 'Veuillez sélectionner une catégorie';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<ProductType>(
-                      decoration: const InputDecoration(
-                        labelText: 'Type',
-                        border: OutlineInputBorder(),
+                    SizedBox(
+                      width: constraints.maxWidth > 600 
+                        ? (constraints.maxWidth - 32) / 2 
+                        : constraints.maxWidth,
+                      child: DropdownButtonFormField<ProductType>(
+                        decoration: const InputDecoration(
+                          labelText: 'Type',
+                          border: OutlineInputBorder(),
+                        ),
+                        value: _selectedType.value,
+                        items: ProductType.values.map((type) {
+                          return DropdownMenuItem(
+                            value: type,
+                            child: Text(
+                              type.value,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) => _selectedType.value = value,
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Veuillez sélectionner un type';
+                          }
+                          return null;
+                        },
                       ),
-                      value: _selectedType.value,
-                      items: ProductType.values.map((type) {
-                        return DropdownMenuItem(
-                          value: type,
-                          child: Text(type.value),
-                        );
-                      }).toList(),
-                      onChanged: (value) => _selectedType.value = value,
-                      validator: (value) {
-                        if (value == null) {
-                          return 'Veuillez sélectionner un type';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -176,49 +191,58 @@ class AddProductView extends GetView<MarketplaceController> {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Prix',
-                        suffixText: 'FCFA',
-                        border: OutlineInputBorder(),
+              LayoutBuilder(
+                builder: (context, constraints) => Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    SizedBox(
+                      width: constraints.maxWidth > 600 
+                        ? (constraints.maxWidth - 32) / 2 
+                        : constraints.maxWidth,
+                      child: TextFormField(
+                        controller: _priceController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Prix',
+                          suffixText: 'FCFA',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un prix';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Prix invalide';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un prix';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Prix invalide';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _quantityController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Quantité disponible',
-                        border: OutlineInputBorder(),
+                    SizedBox(
+                      width: constraints.maxWidth > 600 
+                        ? (constraints.maxWidth - 32) / 2 
+                        : constraints.maxWidth,
+                      child: TextFormField(
+                        controller: _quantityController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Quantité disponible',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer une quantité';
+                          }
+                          if (int.tryParse(value) == null) {
+                            return 'Quantité invalide';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer une quantité';
-                        }
-                        if (int.tryParse(value) == null) {
-                          return 'Quantité invalide';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(

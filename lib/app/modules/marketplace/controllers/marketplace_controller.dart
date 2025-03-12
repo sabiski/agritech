@@ -539,19 +539,31 @@ class MarketplaceController extends GetxController {
   // Upload d'une image de produit
   Future<String> uploadProductImage(File imageFile) async {
     try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
-      final storageResponse = await _supabase.storage
-          .from('product_images')
-          .upload(fileName, imageFile);
+      final bytes = await imageFile.readAsBytes();
+      final fileExt = imageFile.path.split('.').last.toLowerCase();
+      final fileName = 'product_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final filePath = 'products/$fileName';
+
+      // Upload the file
+      await _supabase.storage.from('products').uploadBinary(
+        filePath,
+        bytes,
+        fileOptions: FileOptions(
+          contentType: fileExt == 'png' 
+            ? 'image/png'
+            : fileExt == 'jpg' || fileExt == 'jpeg'
+              ? 'image/jpeg'
+              : 'image/webp',
+          upsert: true,
+        ),
+      );
       
-      final imageUrl = _supabase.storage
-          .from('product_images')
-          .getPublicUrl(fileName);
-      
-      return imageUrl;
+      // Get the public URL
+      final String publicUrl = _supabase.storage.from('products').getPublicUrl(filePath);
+      return publicUrl;
     } catch (e) {
       print('Error uploading image: $e');
-      throw Exception('Failed to upload image');
+      rethrow;
     }
   }
 } 
