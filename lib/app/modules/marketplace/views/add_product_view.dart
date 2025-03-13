@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,7 +18,7 @@ class AddProductView extends GetView<MarketplaceController> {
   final _priceController = TextEditingController();
   final _quantityController = TextEditingController();
   final _unitController = TextEditingController();
-  final _selectedImages = <File>[].obs;
+  final _selectedImages = <dynamic>[].obs;
   final _isPromotion = false.obs;
   final _promoPrice = TextEditingController();
   final _selectedCategory = Rx<ProductCategory?>(null);
@@ -362,7 +364,7 @@ class AddProductView extends GetView<MarketplaceController> {
     );
   }
 
-  Widget _buildImagePreview(File image, int index) {
+  Widget _buildImagePreview(dynamic image, int index) {
     return Stack(
       children: [
         Container(
@@ -372,7 +374,9 @@ class AddProductView extends GetView<MarketplaceController> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             image: DecorationImage(
-              image: FileImage(image),
+              image: kIsWeb && image is Uint8List
+                ? MemoryImage(image)
+                : FileImage(image as File) as ImageProvider,
               fit: BoxFit.cover,
             ),
           ),
@@ -397,11 +401,26 @@ class AddProductView extends GetView<MarketplaceController> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    
-    if (pickedFile != null) {
-      _selectedImages.add(File(pickedFile.path));
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (pickedFile != null) {
+        if (kIsWeb) {
+          final bytes = await pickedFile.readAsBytes();
+          _selectedImages.add(bytes);
+        } else {
+          _selectedImages.add(File(pickedFile.path));
+        }
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      Get.snackbar(
+        'Erreur',
+        'Impossible de sélectionner l\'image',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
@@ -443,7 +462,7 @@ class AddProductView extends GetView<MarketplaceController> {
 
       // Upload images and get URLs
       final imageUrls = await Future.wait(
-        _selectedImages.map((file) => controller.uploadProductImage(file))
+        _selectedImages.map((image) => controller.uploadProductImage(image))
       );
 
       // Update product with image URLs

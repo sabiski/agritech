@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/product_model.dart';
 import '../models/cart_model.dart';
 import '../models/cart_item_model.dart';
@@ -8,6 +9,7 @@ import '../models/order_model.dart';
 import '../models/order_item_model.dart';
 import '../../../core/utils/helpers.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 class MarketplaceController extends GetxController {
   final _supabase = Supabase.instance.client;
@@ -537,14 +539,30 @@ class MarketplaceController extends GetxController {
   }
 
   // Upload d'une image de produit
-  Future<String> uploadProductImage(File imageFile) async {
+  Future<String> uploadProductImage(dynamic imageFile) async {
     try {
-      final bytes = await imageFile.readAsBytes();
-      final fileExt = imageFile.path.split('.').last.toLowerCase();
+      late Uint8List bytes;
+      late String fileExt;
+
+      if (kIsWeb) {
+        if (imageFile is Uint8List) {
+          bytes = imageFile;
+          fileExt = 'png'; // Default to PNG for web uploads
+        } else {
+          throw Exception('Invalid image format for web');
+        }
+      } else {
+        if (imageFile is File) {
+          bytes = await imageFile.readAsBytes();
+          fileExt = imageFile.path.split('.').last.toLowerCase();
+        } else {
+          throw Exception('Invalid image format for mobile');
+        }
+      }
+
       final fileName = 'product_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final filePath = 'products/$fileName';
 
-      // Upload the file
       await _supabase.storage.from('products').uploadBinary(
         filePath,
         bytes,
@@ -558,9 +576,7 @@ class MarketplaceController extends GetxController {
         ),
       );
       
-      // Get the public URL
-      final String publicUrl = _supabase.storage.from('products').getPublicUrl(filePath);
-      return publicUrl;
+      return _supabase.storage.from('products').getPublicUrl(filePath);
     } catch (e) {
       print('Error uploading image: $e');
       rethrow;
