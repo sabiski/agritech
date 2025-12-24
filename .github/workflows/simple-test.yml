@@ -1,0 +1,66 @@
+// je fais  un pepline et je veux que tu me guides pour le faire
+Sure! To create a simple GitHub Actions workflow in the `.github/workflow/simple-test.yml` file, you can follow these steps:
+1. **Create the Directory and File**: Make sure you have a `.github/workflows` directory in your repository. Inside that directory, create a file named `simple-test.yml`.
+2. **Define the Workflow**: Open the `simple-test.yml` file and start by defining the name of your workflow and the trigger event. For example, you can trigger the workflow on every push to the main branch.
+```yamlname: Simple Test Workflow
+on:
+  push:
+    branches:
+      - main
+3. **Set Up Jobs**: Next, define the jobs that will run as part of this workflow. For a simple test, you can create a job that runs on the latest version of Ubuntu and executes some basic commands.
+```yamljobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run a simple command
+        run: echo "Hello, World!"
+```4. **Complete the Workflow**: Combine all the parts together to complete your `simple-test.yml` file:
+```yamlname: Simple Test Workflow
+on:
+  push:
+    branches:
+      - main
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run a simple command
+        run: echo "Hello, World!"
+```
+5. **Commit and Push**: Save the file, commit your changes, and push them to your repository. GitHub Actions will automatically detect the new workflow and run it on the next push to the main branch.yaml
+name: Simple Test Workflow  
+on:
+  push:
+    branches:
+      - main
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run a simple command
+        run: echo "Hello, World!"
+```yamlyaml
+name: Simple Test Workflow
+on:
+  push:
+    branches:
+      - main
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run a simple command
+        run: echo "Hello, World!"
+```yamlyaml
